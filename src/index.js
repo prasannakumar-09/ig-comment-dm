@@ -1,5 +1,5 @@
 import html from './dashboard.html';
-import { API, MAX_DMS, MAX_MEDIA, collectComments, commentStatus, defaults, isRateLimit, processComments, validateConfig } from './core.js';
+import { API, MAX_DMS, MAX_MEDIA, collectComments, commentStatus, defaults, isRateLimit, plainText, processComments, processInbox, pruneInbox, validateConfig } from './core.js';
 
 const KEY = 'state'; // the only KV key
 // Fields from the earlier Instagram-Login version (the token must not stay in KV). Dropped on next save.
@@ -67,17 +67,53 @@ async function run(env, manual = false) {
     return { skipped: 'A scheduled run may be in progress. Try again in a minute.' };
 
   let dirty = false;
-  let meCalled = false;
+  let calls = 0; // Instagram calls made before the comment pages, so pages + sends stay within 50 subrequests
   try {
     if (s.userId !== id || !s.username) {
       const me = await ig(token, `/${id}?fields=username`);
       Object.assign(s, { userId: id, username: me.username });
-      dirty = meCalled = true;
+      dirty = true;
+      calls++;
     }
 
+    const saveNow = async (st) => { await save(env, st); dirty = false; };
+    // Rich messages (button / quick replies) fall back to plain text if Instagram refuses them (costs one more call).
+    const sendWithFallback = async (recipient, message) => {
+      try {
+        return await ig(token, `/${id}/messages`, post({ recipient, message }));
+      } catch (e) {
+        if (isRateLimit(e) || /already has a reply/i.test(e.message) || !(message.attachment || message.quick_replies)) throw e;
+        return ig(token, `/${id}/messages`, post({ recipient, message: { text: plainText(message) } }));
+      }
+    };
+    pruneInbox(s, now);
+
+    // 1) Inbox first (people waiting on a follow gate / DM keywords are inside a 24 h window). Max 1 + 2×5 calls.
+    let inbox = { handled: 0 };
+    if (s.rules.some((r) => r.enabled && (r.gate || r.inbox)) || Object.keys(s.gates).length) {
+      const f = encodeURIComponent('updated_time,participants,messages.limit(3){from,message,created_time}');
+      const data = (await ig(token, `/${id}/conversations?platform=instagram&fields=${f}&limit=15`)).data || [];
+      calls++;
+      const convs = data
+        .filter((c) => now - Date.parse(c.updated_time) < 864e5)
+        .map((c) => {
+          const other = (c.participants?.data || []).find((p) => p.id !== id) || {};
+          const msgs = (c.messages?.data || []).filter((m) => m.from?.id && m.from.id !== id)
+            .map((m) => ({ id: m.id, text: m.message || '', at: Date.parse(m.created_time) }));
+          return { pid: other.id, user: other.username || '?', msgs };
+        })
+        .filter((c) => c.pid && c.msgs.length);
+      inbox = await processInbox(s, convs, {
+        save: saveNow,
+        follows: async (pid) => { calls++; return (await ig(token, `/${pid}?fields=is_user_follow_business`)).is_user_follow_business === true; },
+        send: (pid, message) => { calls++; return sendWithFallback({ id: pid }, message); },
+      }, now);
+    }
+
+    // 2) Comments. 50 subrequests per run: keep 2 per possible DM (DM + public reply), rest on comment pages.
     const media = (await ig(token, `/${id}/media?fields=id,permalink,timestamp&limit=${MAX_MEDIA}`)).data || [];
-    // 50 subrequests per run: keep 2 per possible DM (DM + public reply), spend the rest on comment pages.
-    const pageBudget = 50 - 2 * MAX_DMS - 1 - (meCalled ? 1 : 0);
+    calls++;
+    const pageBudget = Math.max(1, 50 - calls - 2 * MAX_DMS);
     const { comments, pages } = await collectComments(media, commentPage(token), pageBudget, now);
 
     if (s.lastError && !s.lastError.msg.startsWith('Rate limited')) {
@@ -89,17 +125,14 @@ async function run(env, manual = false) {
       s,
       comments,
       {
-        save: async (st) => {
-          await save(env, st);
-          dirty = false;
-        },
-        dm: (cid, text) => ig(token, `/${id}/messages`, post({ recipient: { comment_id: cid }, message: { text } })),
+        save: saveNow,
+        dm: (cid, message) => sendWithFallback({ comment_id: cid }, message),
         reply: (cid, message) => ig(token, `/${cid}/replies`, post({ message })),
       },
       now
     );
     if (dirty) await save(env, s);
-    return { ...res, posts: media.length, pages, comments: comments.length };
+    return { ...res, inbox: inbox.handled, posts: media.length, pages, comments: comments.length };
   } catch (e) {
     const msg = isRateLimit(e) ? 'Rate limited by Instagram. Will retry next run.' : e.message;
     // Only write when the error changes, so a broken token doesn't burn the KV write quota.
@@ -131,6 +164,9 @@ const publicView = (s, env) => ({
   rules: s.rules,
   replyText: s.replyText,
   failReplyText: s.failReplyText,
+  gateText: s.gateText,
+  trackClicks: s.trackClicks !== false,
+  waitingOnFollow: Object.keys(s.gates || {}).length,
   replyEnabled: s.replyEnabled,
   dryRun: s.dryRun,
   log: s.log,
@@ -143,7 +179,9 @@ const publicView = (s, env) => ({
 });
 
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
+    const lm = new URL(req.url).pathname.match(/^\/l\/([\w-]{1,64})$/);
+    if (req.method === 'GET' && lm) return click(env, ctx, lm[1]); // public: people tap these links in DMs
     if (!(await authed(req, env)))
       return new Response('Password required', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="ig-dm"' } });
 
@@ -155,7 +193,8 @@ export default {
 
     if (m === 'GET' && pathname === '/')
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
-    if (m === 'GET' && pathname === '/api/state') return json(publicView(await load(env), env));
+    if (m === 'GET' && pathname === '/api/state')
+      return json({ ...publicView(await load(env), env), clicks: (await env.KV.get(CLICK_KEY, { type: 'json', cacheTtl: 30 })) || {} });
     if (m === 'GET' && pathname === '/api/posts') {
       if (!env.IG_TOKEN || !env.IG_USER_ID) return json({ error: 'IG_TOKEN or IG_USER_ID not set' }, 400);
       try {
@@ -177,7 +216,7 @@ export default {
       if (cfg.error) return json(cfg, 400);
       const s = await load(env);
       if (s.dryRun && !cfg.dryRun) s.dryHandled = {}; // dry-run "handled" must not block real DMs
-      Object.assign(s, cfg);
+      Object.assign(s, cfg, { origin: new URL(req.url).origin }); // the 5-minute run has no URL; it builds /l/ links from this
       await save(env, s);
       return json(publicView(s, env));
     }
@@ -190,3 +229,25 @@ export default {
     ctx.waitUntil(run(env).then((r) => console.log('scheduled run', JSON.stringify(r))));
   },
 };
+
+// ---------- click tracking: /l/<rule id> -> 302 to that rule's own link ----------
+// Counted in memory, written at most every 10 min to a SEPARATE key ("clicks"), so a viral reel can never use up
+// the KV write quota that DM sending needs, and a click can never overwrite the DM state. Counts are approximate
+// (an isolate that shuts down before flushing loses its unflushed clicks).
+const CLICK_KEY = 'clicks';
+let pending = {}, lastFlush = Date.now();
+async function click(env, ctx, ruleId) {
+  const s = await load(env);
+  const rule = s.rules.find((r) => r.id === ruleId);
+  if (!rule?.link) return new Response('Link not found', { status: 404 });
+  pending[ruleId] = (pending[ruleId] || 0) + 1;
+  if (Date.now() - lastFlush > 600e3) {
+    const batch = pending; pending = {}; lastFlush = Date.now();
+    ctx.waitUntil((async () => {
+      const c = (await env.KV.get(CLICK_KEY, 'json')) || {};
+      for (const [k, n] of Object.entries(batch)) c[k] = (c[k] || 0) + n;
+      await env.KV.put(CLICK_KEY, JSON.stringify(c));
+    })());
+  }
+  return Response.redirect(rule.link, 302); // only ever a link you stored in a rule: no open redirect
+}

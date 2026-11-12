@@ -164,7 +164,7 @@
   .run-out { margin-top:12px; font-size:13px; color:var(--ink-2); min-height:1.5em; }
 
   /* dialogs */
-  dialog { border:1px solid var(--line); border-radius:16px; padding:0; width:min(560px, calc(100vw - 32px)); background:var(--surface); color:var(--ink); box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  dialog { border:1px solid var(--line); border-radius:16px; padding:0; width:min(560px, calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; background:var(--surface); color:var(--ink); box-shadow:0 20px 50px rgba(0,0,0,.25); }
   dialog::backdrop { background:rgba(10,12,16,.45); }
   .dlg-h { padding:18px 20px 4px; } .dlg-h h3 { margin:0; font-size:16px; } .dlg-h p { margin:6px 0 0; color:var(--ink-2); }
   .dlg-b { padding:16px 20px 4px; }
@@ -204,6 +204,7 @@
         <select id="fMatch">
           <option value="keyword">A keyword or a specific emoji</option>
           <option value="emoji">Any emoji</option>
+          <option value="any">Any comment</option>
         </select>
         <span class="hint" id="matchHint"></span>
       </div>
@@ -221,6 +222,34 @@
       <div class="field">
         <label for="fPost">Applies to</label>
         <select id="fPost"></select>
+      </div>
+      <div class="field">
+        <label for="fLink">Link <span class="hint">(optional)</span></label>
+        <input type="text" id="fLink" maxlength="500" autocomplete="off" placeholder="https://…" inputmode="url">
+        <span class="hint">Added to the DM. Clicks are counted when click tracking is on.</span>
+        <span class="err" id="eLink" hidden></span>
+      </div>
+      <div class="field">
+        <label for="fButton">Button text <span class="hint">(optional, max 20)</span></label>
+        <input type="text" id="fButton" maxlength="20" autocomplete="off" placeholder="Open link 🔗">
+        <span class="hint">Shows the link as a tappable button. If Instagram refuses buttons, the link is sent as text.</span>
+      </div>
+      <div class="field">
+        <label for="fExclude">Don't DM if the comment contains <span class="hint">(optional)</span></label>
+        <input type="text" id="fExclude" maxlength="200" autocomplete="off" placeholder="spam, scam">
+        <span class="hint">Comma-separated words.</span>
+      </div>
+      <div class="field">
+        <label for="fUntil">Stop after <span class="hint">(optional end date)</span></label>
+        <input type="date" id="fUntil">
+      </div>
+      <div class="row between" style="margin-bottom:12px">
+        <span><span class="lbl" id="fGateLbl" style="font-weight:600">Follow gate</span><br><span class="hint">Only followers get the link. Others are asked to follow, then tap “Done ✅”.</span></span>
+        <button type="button" class="switch" id="fGate" role="switch" aria-checked="false" aria-labelledby="fGateLbl"></button>
+      </div>
+      <div class="row between" style="margin-bottom:12px">
+        <span><span class="lbl" id="fInboxLbl" style="font-weight:600">Also in DMs &amp; story replies</span><br><span class="hint">Someone who DMs you the keyword (or replies to your story with it) gets the DM too.</span></span>
+        <button type="button" class="switch" id="fInbox" role="switch" aria-checked="false" aria-labelledby="fInboxLbl"></button>
       </div>
       <div class="row between" style="margin-bottom:10px">
         <span class="lbl" id="fOnLbl" style="font-weight:600">Rule is on</span>
@@ -305,7 +334,15 @@ function runBlockedReason() {
 
 /* ---------- saving: every action saves immediately ---------- */
 const FAIL_DEFAULT = "We couldn't DM you 🙈 Please allow message requests or follow us, then comment again.";
-const typing = () => ['replyText', 'failReplyText', 'cmSearch'].includes(document.activeElement?.id); // don't re-render under the cursor
+const typing = () => ['replyText', 'failReplyText', 'gateText', 'cmSearch'].includes(document.activeElement?.id); // don't re-render under the cursor
+const GATE_DEFAULT = 'Almost there! 👋 Follow me, then tap “Done ✅” below (or reply DONE) and I’ll send it right over.';
+function exportCsv() {
+  const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [['time', 'user', 'keyword', 'post', 'result', 'error'], ...S.log.map((e) => [new Date(e.t).toISOString(), e.user, e.keyword, e.post,
+    e.dry ? 'dry run' : e.skipped ? 'skipped' : !e.ok ? 'failed' : e.gate || 'sent', e.error || ''])];
+  const a = h('a', { href: URL.createObjectURL(new Blob(['﻿' + rows.map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' })), download: `dm-log-${new Date().toISOString().slice(0, 10)}.csv` });
+  document.body.append(a); a.click(); a.remove();
+}
 
 /* ---------- comments tab ---------- */
 let view = location.hash === '#comments' ? 'comments' : 'overview';
@@ -376,7 +413,8 @@ function renderComments() {
     h('div', { class: 'card-b', style: 'border-top:1px solid var(--line)' }, h('p', { class: 'counter', style: 'margin:0' },
       'Shows what Instagram gives apps (newest pages first). Comments Instagram hides as spam never appear here and cannot get a DM. "Will DM next run" goes out within 5 minutes.')));
 }
-const body = (over) => ({ rules: S.rules, replyText: S.replyText, replyEnabled: S.replyEnabled, failReplyText: S.failReplyText, dryRun: S.dryRun, ...over });
+const body = (over) => ({ rules: S.rules, replyText: S.replyText, replyEnabled: S.replyEnabled, failReplyText: S.failReplyText,
+  gateText: S.gateText, trackClicks: S.trackClicks, dryRun: S.dryRun, ...over });
 async function save(over, okMsg) {
   if (busy) return false;
   busy = true; document.body.setAttribute('aria-busy', 'true'); render();
@@ -409,11 +447,15 @@ let editingId = null;
 function openRule(rule) {
   editingId = rule ? rule.id : null;
   $('#ruleDlgTitle').textContent = rule ? 'Edit rule' : 'New rule';
-  $('#fMatch').value = rule && rule.match === 'emoji' ? 'emoji' : 'keyword';
+  $('#fMatch').value = rule?.match || 'keyword';
   syncMatch();
-  $('#fKeyword').value = rule && rule.match !== 'emoji' ? rule.keyword : '';
+  $('#fKeyword').value = rule && (rule.match || 'keyword') === 'keyword' ? rule.keyword : '';
   $('#fDm').value = rule ? rule.dm : '';
   $('#fOn').setAttribute('aria-checked', String(rule ? rule.enabled : true));
+  $('#fLink').value = rule?.link || ''; $('#fButton').value = rule?.buttonTitle || ''; $('#fExclude').value = rule?.exclude || '';
+  $('#fUntil').value = rule?.until ? new Date(rule.until - new Date(rule.until).getTimezoneOffset() * 60e3).toISOString().slice(0, 10) : '';
+  $('#fGate').setAttribute('aria-checked', String(!!rule?.gate)); $('#fInbox').setAttribute('aria-checked', String(!!rule?.inbox));
+  $('#eLink').hidden = true;
   const sel = $('#fPost'); sel.replaceChildren(h('option', { value: '' }, 'All posts'));
   for (const p of posts) sel.append(h('option', { value: p.id }, postLabel(p.id)));
   if (rule && rule.postId && !posts.some((p) => p.id === rule.postId)) sel.append(h('option', { value: rule.postId }, postLabel(rule.postId)));
@@ -424,10 +466,12 @@ function openRule(rule) {
   $('#ruleDlg').showModal(); $('#fKeyword').focus();
 }
 function syncMatch() {
-  const emoji = $('#fMatch').value === 'emoji';
-  $('#kwField').hidden = emoji;
-  $('#matchHint').textContent = emoji ? 'Any comment with at least one emoji, like "😍" or "nice 🔥". Keyword rules are checked first.' : '';
+  const m = $('#fMatch').value;
+  $('#kwField').hidden = m !== 'keyword';
+  $('#matchHint').textContent = m === 'emoji' ? 'Any comment with at least one emoji, like "😍" or "nice 🔥". Keyword rules are checked first.'
+    : m === 'any' ? 'Every comment (checked last, after keyword and emoji rules). Use "Don\'t DM if…" to skip words.' : '';
 }
+for (const id of ['#fGate', '#fInbox']) $(id).addEventListener('click', (e) => e.currentTarget.setAttribute('aria-checked', String(e.currentTarget.getAttribute('aria-checked') !== 'true')));
 $('#fMatch').addEventListener('change', syncMatch);
 $('#fDm').addEventListener('input',() => ($('#dmCount').textContent = $('#fDm').value.length + ' / 1000'));
 $('#fOn').addEventListener('click', (e) => e.currentTarget.setAttribute('aria-checked', String(e.currentTarget.getAttribute('aria-checked') !== 'true')));
@@ -435,15 +479,20 @@ $('#ruleCancel').addEventListener('click', () => $('#ruleDlg').close());
 $('#ruleForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const match = $('#fMatch').value;
-  const keyword = match === 'emoji' ? 'any emoji' : $('#fKeyword').value.trim(), dm = $('#fDm').value.trim(), postId = $('#fPost').value;
+  const keyword = match === 'emoji' ? 'any emoji' : match === 'any' ? 'any comment' : $('#fKeyword').value.trim(), dm = $('#fDm').value.trim(), postId = $('#fPost').value;
   const enabled = $('#fOn').getAttribute('aria-checked') === 'true';
+  const link = $('#fLink').value.trim(), buttonTitle = $('#fButton').value.trim(), exclude = $('#fExclude').value.trim();
+  const until = $('#fUntil').value ? new Date($('#fUntil').value + 'T23:59:59').getTime() : null; // end of that day, your time
+  const gate = $('#fGate').getAttribute('aria-checked') === 'true', inbox = $('#fInbox').getAttribute('aria-checked') === 'true';
   const showErr = (id, msg) => { $(id).textContent = msg; $(id).hidden = !msg; };
   const dup = S.rules.find((r) => r.id !== editingId && (r.match || 'keyword') === match && r.keyword.toLowerCase() === keyword.toLowerCase() && (r.postId || '') === postId);
   showErr('#eKeyword', !keyword ? 'Enter a keyword.' : dup && match === 'keyword' ? 'You already have a rule with this keyword for the same posts.' : '');
   showErr('#eDm', !dm ? 'Enter the DM text.' : '');
-  if (dup && match === 'emoji') toast('You already have an "any emoji" rule for the same posts.', true);
-  if (!keyword || !dm || dup) return;
-  const rule = { id: editingId || undefined, match, keyword, dm, postId, enabled };
+  const badLink = link && !/^https:\/\/\S{3,}$/.test(link);
+  showErr('#eLink', badLink ? 'Use a full link starting with https://' : '');
+  if (dup && match !== 'keyword') toast(`You already have an "${keyword}" rule for the same posts.`, true);
+  if (!keyword || !dm || dup || badLink) return;
+  const rule = { id: editingId || undefined, match, keyword, dm, postId, enabled, link, buttonTitle, exclude, until, gate, inbox };
   const rules = editingId ? S.rules.map((r) => (r.id === editingId ? rule : r)) : [...S.rules, rule];
   $('#ruleSave').disabled = true;
   const ok = await save({ rules }, editingId ? 'Rule updated' : 'Rule added');
@@ -545,8 +594,14 @@ function render() {
   // rules
   const rulesList = S.rules.length
     ? h('ul', { class: 'rules' }, S.rules.map((r) => h('li', { class: 'rule' + (r.enabled ? '' : ' off') },
-        h('div', {}, h('span', { class: 'kw', title: r.match === 'emoji' ? 'Any comment with an emoji' : r.keyword }, r.match === 'emoji' ? '😀 any emoji' : r.keyword)),
-        h('div', { class: 'body' }, h('div', { class: 'dm' }, r.dm), h('div', { class: 'meta' }, postLabel(r.postId))),
+        h('div', {}, h('span', { class: 'kw', title: r.match === 'emoji' ? 'Any comment with an emoji' : r.keyword }, r.match === 'emoji' ? '😀 any emoji' : r.match === 'any' ? '💬 any comment' : r.keyword)),
+        h('div', { class: 'body' }, h('div', { class: 'dm' }, r.dm), h('div', { class: 'meta' }, [
+          postLabel(r.postId),
+          r.gate ? '🔒 follow gate' : '', r.inbox ? '✉️ also DMs' : '',
+          r.link ? `🔗 ${(S.clicks || {})[r.id] || 0} clicks` : '',
+          r.until ? (Date.now() > r.until ? '⏹ ended' : `⏱ until ${new Date(r.until).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`) : '',
+          r.exclude ? `🚫 ${r.exclude}` : '',
+        ].filter(Boolean).join(' · '))),
         h('div', { class: 'actions' },
           h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(r.enabled), 'aria-label': `Rule "${r.keyword}" on`, title: r.enabled ? 'On' : 'Off', disabled: busy, 'data-fid': 'sw-' + r.id, onclick: () => toggleRule(r) }),
           iconBtn('edit', `Edit rule "${r.keyword}"`, () => openRule(r)),
@@ -561,31 +616,35 @@ function render() {
   // activity
   const items = S.log.filter((e) => filter === 'all' || (filter === 'sent' && e.ok && !e.dry) || (filter === 'err' && !e.ok && !e.skipped) || (filter === 'dry' && e.dry));
   const segBtn = (key, label) => h('button', { type: 'button', 'aria-pressed': String(filter === key), 'data-fid': 'seg-' + key, onclick: () => { filter = key; render(); } }, label);
-  const status = (e) => e.dry ? h('span', { class: 'pill warn' }, 'Dry run') : e.skipped ? h('span', { class: 'pill' }, 'Skipped') : e.ok ? h('span', { class: 'pill ok' }, 'Sent') : h('span', { class: 'pill bad' }, 'Failed');
+  const GATE = { asked: ['Asked to follow', 'warn'], followed: ['Followed · link sent', 'ok'], 'not following yet': ['Not following yet', 'warn'], 'gave up': ['Gave up (no follow)', ''] };
+  const status = (e) => e.dry ? h('span', { class: 'pill warn' }, 'Dry run') : e.skipped ? h('span', { class: 'pill' }, 'Skipped')
+    : !e.ok ? h('span', { class: 'pill bad' }, 'Failed') : e.gate ? h('span', { class: 'pill ' + GATE[e.gate][1] }, GATE[e.gate][0]) : h('span', { class: 'pill ok' }, 'Sent');
   const postLink = (e) => /^https:\/\/www\.instagram\.com\//.test(e.post || '') ? h('a', { href: e.post, target: '_blank', rel: 'noopener' }, 'View post') : null;
   const activityCard = h('section', { class: 'card', 'aria-labelledby': 'actH' },
     h('div', { class: 'card-h' },
       h('div', { class: 'grow' }, h('h2', { id: 'actH' }, 'Activity'), h('p', {}, 'Last 100 DMs')),
-      h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter activity' }, segBtn('all', 'All'), segBtn('sent', 'Sent'), segBtn('err', 'Errors'), segBtn('dry', 'Dry run'))),
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter activity' }, segBtn('all', 'All'), segBtn('sent', 'Sent'), segBtn('err', 'Errors'), segBtn('dry', 'Dry run')),
+      h('button', { type: 'button', class: 'btn', disabled: !S.log.length, onclick: exportCsv, title: 'Download the activity log as a spreadsheet file' }, 'Export CSV')),
     items.length
       ? h('ul', { class: 'log' }, items.map((e) => h('li', {},
           h('div', { class: 'avatar', 'aria-hidden': 'true' }, (e.user || '?').replace(/^@/, '').charAt(0) || '?'),
           h('div', {},
-            h('div', { class: 'who' }, '@' + e.user, ' ', h('span', { class: 'kw' }, e.keyword)),
+            h('div', { class: 'who' }, '@' + e.user, ' ', h('span', { class: 'kw' }, e.keyword), e.via === 'DM keyword' ? h('span', { class: 'meta', style: 'font-weight:400' }, ' · from a DM') : null),
             h('div', { class: 'meta', title: full(e.t) }, rel(e.t), postLink(e) ? ' · ' : '', postLink(e)),
             e.error ? h('div', { class: 'errtxt', style: e.ok ? 'color:var(--warn)' : e.skipped ? 'color:var(--muted)' : null }, e.error) : null),
           status(e))))
       : h('div', { class: 'empty' }, h('b', {}, filter === 'all' ? 'Nothing yet' : 'Nothing here'), filter === 'all' ? 'Matched comments will show up here.' : 'Try another filter.'));
 
   // reply settings
-  const replyInput = h('input', { type: 'text', id: 'replyText', maxlength: '300', value: S.replyText, placeholder: 'Sent you a DM 📩', disabled: busy || !S.replyEnabled });
+  const replyInput = h('textarea', { id: 'replyText', rows: '3', placeholder: 'Sent you a DM 📩\nCheck your DMs 🙌', disabled: busy || !S.replyEnabled, style: 'min-height:84px' }, S.replyText);
   const replyCard = h('section', { class: 'card', 'aria-labelledby': 'replyH' },
     h('div', { class: 'card-h' },
       h('div', { class: 'grow' }, h('h2', { id: 'replyH' }, 'Public reply'), h('p', {}, 'Posted under the comment after the DM is sent.')),
       h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(S.replyEnabled), 'aria-label': 'Post a public reply', disabled: busy, 'data-fid': 'replySw',
         onclick: () => S.replyEnabled ? save({ replyEnabled: false }, 'Public reply off') : save({ replyEnabled: true, replyText: S.replyText || 'Sent you a DM 📩' }, 'Public reply on') })),
     h('div', { class: 'card-b' },
-      h('div', { class: 'field', style: 'margin-bottom:10px' }, h('label', { for: 'replyText' }, 'Reply text'), replyInput),
+      h('div', { class: 'field', style: 'margin-bottom:10px' }, h('label', { for: 'replyText' }, 'Reply text'), replyInput,
+        h('span', { class: 'hint' }, 'One reply per line: each comment gets one of them at random, so your replies don\'t look like spam.')),
       h('button', { type: 'button', class: 'btn', disabled: busy || !S.replyEnabled, onclick: () => {
         const t = $('#replyText').value.trim(); if (!t) return toast('Reply text is empty. Turn the reply off instead.', true);
         save({ replyText: t }, 'Reply text saved');
@@ -596,7 +655,8 @@ function render() {
         onclick: () => S.failReplyText ? save({ failReplyText: '' }, 'Failed-DM reply off') : save({ failReplyText: FAIL_DEFAULT }, 'Failed-DM reply on') })),
     S.failReplyText ? h('div', { class: 'card-b' },
       h('div', { class: 'field', style: 'margin-bottom:10px' }, h('label', { for: 'failReplyText' }, 'Reply text'),
-        h('input', { type: 'text', id: 'failReplyText', maxlength: '300', value: S.failReplyText, disabled: busy })),
+        h('textarea', { id: 'failReplyText', rows: '2', disabled: busy, style: 'min-height:64px' }, S.failReplyText),
+        h('span', { class: 'hint' }, 'One per line for variations.')),
       h('button', { type: 'button', class: 'btn', disabled: busy, onclick: () => {
         const t = $('#failReplyText').value.trim(); if (!t) return toast('Text is empty. Use the switch to turn it off instead.', true);
         save({ failReplyText: t }, 'Failed-DM reply saved');
@@ -620,7 +680,22 @@ function render() {
         blocked ? h('span', { class: 'counter' }, blocked) : null),
       h('div', { class: 'run-out', role: 'status', 'aria-live': 'polite' }, runMsg)));
 
-  app.replaceChildren(banner || '', runCard, stats,h('div', { class: 'grid-2' }, h('div', { class: 'stack' }, rulesCard, activityCard), h('div', { class: 'stack' }, replyCard, sysCard)));
+  // follow gate + click tracking
+  const gateCard = h('section', { class: 'card', 'aria-labelledby': 'gateH' },
+    h('div', { class: 'card-h' }, h('div', { class: 'grow' }, h('h2', { id: 'gateH' }, 'Follow gate & link clicks'),
+      h('p', {}, `Used by rules with 🔒 follow gate. ${S.waitingOnFollow || 0} waiting to follow right now.`))),
+    h('div', { class: 'card-b' },
+      h('div', { class: 'field', style: 'margin-bottom:10px' }, h('label', { for: 'gateText' }, 'Message asking them to follow'),
+        h('textarea', { id: 'gateText', rows: '3', placeholder: GATE_DEFAULT, disabled: busy, style: 'min-height:84px' }, S.gateText || ''),
+        h('span', { class: 'hint' }, 'A “Done ✅” button is added. After they tap it, the tool checks they follow, then sends the link (up to 3 reminders, within 24 h).')),
+      h('button', { type: 'button', class: 'btn', disabled: busy, onclick: () => save({ gateText: $('#gateText').value.trim() }, 'Follow-gate message saved') }, 'Save message'),
+      h('div', { class: 'row between', style: 'margin-top:16px' },
+        h('span', {}, h('span', { class: 'lbl', id: 'trackLbl', style: 'font-weight:600' }, 'Count link clicks'), h('br'),
+          h('span', { class: 'hint' }, 'Links go through your dashboard address so taps are counted (approximate).')),
+        h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(S.trackClicks !== false), 'aria-labelledby': 'trackLbl', disabled: busy, 'data-fid': 'trackSw',
+          onclick: () => save({ trackClicks: S.trackClicks === false }, S.trackClicks === false ? 'Click counting on' : 'Click counting off') }))));
+
+  app.replaceChildren(banner || '', runCard, stats,h('div', { class: 'grid-2' }, h('div', { class: 'stack' }, rulesCard, activityCard), h('div', { class: 'stack' }, replyCard, gateCard, sysCard)));
   // keep keyboard focus on the same control after re-render
   if (focusId) { const el = app.querySelector(`[data-fid="${CSS.escape(focusId)}"]`); if (el) el.focus(); }
 }

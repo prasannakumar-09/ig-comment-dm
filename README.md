@@ -154,11 +154,19 @@ Done. It now runs every 5 minutes by itself, even with your computer off.
 
 **Overview tab**
 - **Latest run:** live bar of the last run: sent / skipped / failed. Updates by itself.
-- **Keyword rules:** add, edit, delete, switch on/off. Matching is whole-word, any letter case, any font (`LINK`, `link`, `ʟɪɴᴋ`, `𝐥𝐢𝐧𝐤` all match; `linkedin` doesn't). Keyword rules win over "any emoji" rules.
-- **Public reply:** the text posted under the comment after a DM (or turn it off).
+- **Keyword rules:** add, edit, delete, switch on/off. Matching is whole-word, any letter case, any font (`LINK`, `link`, `ʟɪɴᴋ`, `𝐥𝐢𝐧𝐤` all match; `linkedin` doesn't). Triggers: **a keyword** (or a specific emoji), **any emoji**, or **any comment**. Keyword rules win, then any emoji, then any comment. Each rule can also have:
+  - **Link + button text:** the link is sent as a tappable button (falls back to plain text if Instagram refuses buttons). *Beta.*
+  - **Don't DM if the comment contains…:** comma-separated words to skip.
+  - **Stop after:** an end date; the rule switches itself off after that day.
+  - **🔒 Follow gate** *(beta)*: only followers get the link. Others get "Follow me, then tap **Done ✅**"; after they tap, the tool checks they follow and sends the link (up to 3 reminders, within Instagram's 24-hour reply window).
+  - **✉️ Also in DMs & story replies:** someone who DMs you the keyword, or replies to your story with it, gets the DM too.
+- **Public reply:** the text posted under the comment after a DM. Put **one reply per line** and each comment gets one at random, so replies don't look like spam.
 - **If the DM fails:** text posted under the comment when Instagram blocks the DM (e.g. their privacy settings), so they can fix it and comment again.
-- **Activity:** last 100 DMs, filter by sent / errors / dry run.
+- **Follow gate & link clicks:** your follow-gate message, how many people are waiting to follow, and **click counting** (links go through your dashboard address so taps are counted; counts are approximate).
+- **Activity:** last 100 DMs, filter by sent / errors / dry run, **Export CSV**.
 - **System:** token status, dry run / live switch, **Run now**.
+
+> **Beta:** the follow gate and link buttons use Instagram features (quick-reply buttons, follower check after a reply) that Meta documents, but they haven't been confirmed on every account yet. If the **Done ✅** button doesn't show, people can just reply "DONE"; if the link button is refused, the link is sent as text.
 
 **Comments tab:** every recent comment on your posts and what the tool did with it: *DM sent*, *Will DM next run*, *Skipped · you replied*, *No keyword*, *Older than 7 days*, … Filter by post or result, or search a name. Use it to check why someone did or didn't get a DM.
 
@@ -181,13 +189,16 @@ Done. It now runs every 5 minutes by itself, even with your computer off.
 | "already has a reply" / "already had a DM" | That comment already got a private DM (from you or another tool). Instagram allows one. |
 | DM failed: "isn't available" / similar | Their privacy settings block it. The "If the DM fails" reply tells them. |
 | They say they got nothing | Ask them to check **Requests** in their DMs (shown there if they don't follow you). |
+| Follow gate: they followed but got "can't see your follow yet" | Instagram can take a minute to update. They can tap **Done ✅** again (up to 3 times within 24 h). |
+| Follow gate: "User consent is required" error | The follower check only works after they've sent you a message (tapping Done counts). Make sure they tap Done or reply DONE. |
 | `npx` / `npm` not found | Install Node.js (LTS) and reopen the terminal. |
 
 ## Free-tier limits (you won't hit these normally)
 
 | Cloudflare free limit | This tool uses |
 |---|---|
-| 50 requests per run | ≤ 50: post list + up to 19 comment pages + 15 × (DM + reply) |
+| 50 requests per run | ≤ 50: inbox check (only if a rule uses follow gate / DMs: 1 + up to 2 × 5) + post list + comment pages + 15 × (DM + reply) |
+| 1,000 storage writes/day (clicks) | Click counts are saved at most once every 10 minutes, in their own key, so a viral reel can't use up the writes DMs need |
 | 1,000 storage writes/day | 0 on quiet runs, 2 on runs that send, 1 per dashboard change |
 | 100,000 storage reads/day | ~288 for the automatic checks + dashboard while open |
 

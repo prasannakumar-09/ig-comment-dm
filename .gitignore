@@ -5,3 +5,5 @@ node_modules/
 *.log
 # your own IDs live here; friends copy wrangler.example.toml
 wrangler.toml
+# reel production files (video, voice models, renders)
+reel/

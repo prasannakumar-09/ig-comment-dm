@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasWord, matchRule, pickWork, commentStatus, processComments, collectComments, defaults, validateConfig, MAX_DMS, WEEK } from '../src/core.js';
+import { hasWord, matchRule, pickWork, pickLine, dmMessage, plainText, GATE_DONE, processInbox, commentStatus, processComments, collectComments, defaults, validateConfig, MAX_DMS, WEEK } from '../src/core.js';
 
 const NOW = Date.parse('2026-11-12T12:00:00Z');
 const ago = (h) => new Date(NOW - h * 3600e3).toISOString().replace('.000Z', '+0000');
@@ -289,6 +289,90 @@ test('no work means no KV writes', async () => {
   assert.equal(api.calls.saves.length, 0);
 });
 
+// ---------- new rule options ----------
+test('"any comment" trigger has lowest priority; exclude words and end date', () => {
+  const rules = [rule('any comment', { match: 'any', exclude: 'scam, spam' }), rule('link'), rule('old', { until: NOW - 1 })];
+  assert.equal(matchRule('LINK pls', '1', rules, NOW).keyword, 'link');
+  assert.equal(matchRule('nice video', '1', rules, NOW).keyword, 'any comment');
+  assert.equal(matchRule('this is a SCAM', '1', rules, NOW), null);
+  assert.equal(matchRule('old', '1', rules, NOW).keyword, 'any comment'); // "old" rule expired, falls through to any
+  assert.equal(matchRule('   ', '1', rules, NOW), null);
+});
+
+test('reply variations: one line per comment, stable per comment, varied across comments', () => {
+  const text = 'Sent! 📩\nCheck your DMs 🙌\nJust sent it ✨';
+  assert.equal(pickLine(text, 'c1'), pickLine(text, 'c1'));
+  const picks = new Set(Array.from({ length: 30 }, (_, i) => pickLine(text, 'c' + i)));
+  assert.ok(picks.size >= 2);
+  assert.equal(pickLine('Only one', 'x'), 'Only one');
+});
+
+test('DM message: plain, link appended, button template, tracked link, plain-text fallback', () => {
+  assert.deepEqual(dmMessage({ dm: 'hi' }), { text: 'hi' });
+  assert.deepEqual(dmMessage({ dm: 'hi', link: 'https://x.co' }), { text: 'hi\nhttps://x.co' });
+  const b = dmMessage({ id: 'r1', dm: 'hi', link: 'https://x.co', buttonTitle: 'Open' }, { origin: 'https://w.dev' });
+  assert.equal(b.attachment.payload.buttons[0].url, 'https://w.dev/l/r1');
+  assert.equal(plainText(b), 'hi\nhttps://w.dev/l/r1');
+  assert.equal(dmMessage({ id: 'r1', dm: 'hi', link: 'https://x.co' }, { origin: 'https://w.dev', trackClicks: false }).text, 'hi\nhttps://x.co');
+});
+
+test('follow-gated comment: first DM asks to follow (with Done button) and remembers who', async () => {
+  const s = state({ rules: [rule('link', { gate: true })] });
+  const api = fakeApi();
+  api.dm = async (id, msg) => { api.calls.dm.push({ id, msg }); return { recipient_id: 'igsid-1' }; };
+  await processComments(s, [comment('1', 'link')], api, NOW);
+  assert.equal(api.calls.dm[0].msg.quick_replies[0].title, GATE_DONE);
+  assert.equal(s.gates['igsid-1'].rid, 'link');
+  assert.equal(s.log[0].gate, 'asked');
+});
+
+// ---------- inbox: follow gate + DM keywords ----------
+function inboxApi(follows) {
+  const calls = { send: [], saves: [] };
+  return {
+    calls,
+    save: async (s) => calls.saves.push(JSON.parse(JSON.stringify(s))),
+    follows: async () => follows(),
+    send: async (pid, msg) => calls.send.push({ pid, text: msg.text || plainText(msg), seenAtSend: !!calls.saves.at(-1)?.inboxSeen[pid] }),
+  };
+}
+const conv = (pid, text, minsAgo = 1) => ({ pid, user: 'u_' + pid, msgs: [{ id: 'm' + pid + minsAgo, text, at: NOW - minsAgo * 60e3 }] });
+
+test('follow gate: follower gets the link (marked handled first); non-follower asked again, gives up after 3', async () => {
+  const r = rule('link', { gate: true, dm: 'here', link: 'https://x.co' });
+  const s = state({ rules: [r], gates: { p1: { rid: 'link', user: 'a', at: NOW - 60e3, n: 1 }, p2: { rid: 'link', user: 'b', at: NOW - 60e3, n: 1 } } });
+  let followers = new Set(['p1']);
+  const api = inboxApi(() => false);
+  api.follows = async (pid) => followers.has(pid);
+  await processInbox(s, [conv('p1', 'Done ✅'), conv('p2', 'done')], api, NOW);
+  assert.deepEqual(api.calls.send.map((x) => [x.pid, x.text.startsWith('here'), x.seenAtSend]), [['p1', true, true], ['p2', false, true]]);
+  assert.ok(!s.gates.p1); assert.equal(s.gates.p2.n, 2);
+  // same messages again: nothing new happens (no duplicate link)
+  await processInbox(s, [conv('p1', 'Done ✅'), conv('p2', 'done')], api, NOW + 1);
+  assert.equal(api.calls.send.length, 2);
+  // p2 keeps tapping without following: asked at n=2, then n=3, then gives up
+  await processInbox(s, [conv('p2', 'done', 0.5)], api, NOW + 2);
+  await processInbox(s, [conv('p2', 'done', 0.2)], api, NOW + 3);
+  assert.ok(!s.gates.p2);
+  assert.equal(s.log[0].gate, 'gave up');
+});
+
+test('DM keywords / story replies: only rules marked "also in DMs", 24 h window, no follow check unless gated', async () => {
+  const s = state({ rules: [rule('auto', { inbox: true, dm: 'repo' }), rule('link')] });
+  const api = inboxApi(() => { throw new Error('should not check'); });
+  await processInbox(s, [conv('a', 'AUTO please'), conv('b', 'link'), conv('c', 'auto', 60 * 25)], api, NOW);
+  assert.deepEqual(api.calls.send.map((x) => [x.pid, x.text]), [['a', 'repo']]);
+  assert.equal(s.log[0].via, 'DM keyword');
+});
+
+test('inbox: gated DM keyword checks follow right away (they messaged, so consent exists)', async () => {
+  const s = state({ rules: [rule('auto', { inbox: true, gate: true, dm: 'repo' })] });
+  const api = inboxApi(() => true);
+  await processInbox(s, [conv('a', 'auto')], api, NOW);
+  assert.equal(api.calls.send[0].text, 'repo');
+  assert.ok(!s.gates.a);
+});
+
 // ---------- dashboard input ----------
 test('config validation', () => {
   assert.ok(validateConfig({ rules: [{ keyword: '', dm: 'x' }] }).error);
@@ -296,6 +380,10 @@ test('config validation', () => {
   const ok = validateConfig({ rules: [{ keyword: ' Link ', dm: 'go', enabled: 1 }], replyText: '', replyEnabled: true });
   assert.equal(ok.rules[0].keyword, 'Link');
   assert.equal(ok.replyEnabled, false); // empty text turns reply off
+  assert.ok(validateConfig({ rules: [{ keyword: 'a', dm: 'x', link: 'http://insecure.com' }] }).error);
+  assert.ok(validateConfig({ rules: [{ keyword: 'a', dm: 'x', link: 'https://ok.com', buttonTitle: 'way too long for a button' }] }).error);
+  const full = validateConfig({ rules: [{ match: 'any', dm: 'x', enabled: true, gate: 1, inbox: 1, exclude: 'spam', link: 'https://ok.com', buttonTitle: 'Open', until: NOW }], replyText: 'a\n\n b \nc' });
+  assert.deepEqual([full.rules[0].keyword, full.rules[0].gate, full.rules[0].inbox, full.rules[0].until, full.replyText], ['any comment', true, true, NOW, 'a\nb\nc']);
   const emoji = validateConfig({ rules: [{ match: 'emoji', keyword: '', dm: 'hi', enabled: true }] });
   assert.equal(emoji.rules[0].keyword, 'any emoji'); // no keyword needed
   assert.equal(validateConfig({ rules: [{ keyword: 'x', dm: 'y' }] }).rules[0].match, 'keyword'); // old rules stay keyword rules

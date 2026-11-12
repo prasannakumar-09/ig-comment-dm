@@ -12,6 +12,9 @@ export const defaults = () => ({
   replyText: 'Sent you a DM 📩',
   replyEnabled: true,
   failReplyText: "We couldn't DM you 🙈 Please allow message requests or follow us, then comment again.", // '' = off
+  gateText: '', // '' = DEFAULT_GATE
+  gates: {}, // IGSID -> { rid, user, at, n }: people asked to follow, waiting for "Done" (24 h window)
+  inboxSeen: {}, // IGSID -> ms of the last message from them that the inbox step handled
   dryRun: true, // start safe
   handled: {}, // commentId -> comment timestamp (ms)
   dryHandled: {}, // same, for dry-run; cleared when dry-run is turned off
@@ -41,14 +44,28 @@ export function hasWord(text, keyword) {
 // Pictographs (😍🔥❤️), flags (🇮🇳 = two regional indicators) and keycaps (1️⃣ ends in U+20E3).
 export const hasEmoji = (text) => /[\p{Extended_Pictographic}\p{Regional_Indicator}⃣]/u.test(text || '');
 
-// Keyword rules win over "any emoji" rules, so "LINK 🔥" gets the LINK DM.
-export function matchRule(text, mediaId, rules) {
-  const live = rules.filter((r) => r.enabled && (!r.postId || r.postId === mediaId));
+// Exclude words: comma-separated, whole-word like keywords ("scam, spam").
+const excluded = (text, r) => (r.exclude || '').split(',').some((w) => w.trim() && hasWord(text, w));
+
+// Priority: keyword rules, then "any emoji", then "any comment" — so "LINK 🔥" gets the LINK DM.
+// A rule is live while switched on, on its post (or all posts), and before its end date (ms, optional).
+export function matchRule(text, mediaId, rules, now = Date.now()) {
+  const live = rules.filter((r) => r.enabled && (!r.postId || r.postId === mediaId) && !(r.until && now > r.until) && !excluded(text, r));
   return (
-    live.find((r) => r.match !== 'emoji' && hasWord(text, r.keyword)) ||
+    live.find((r) => (r.match || 'keyword') === 'keyword' && hasWord(text, r.keyword)) ||
     live.find((r) => r.match === 'emoji' && hasEmoji(text)) ||
+    live.find((r) => r.match === 'any' && (text || '').trim()) ||
     null
   );
+}
+
+// One line per variation; the same comment always gets the same pick (stable, testable), different comments vary.
+export function pickLine(text, seed) {
+  const lines = (text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2) return lines[0] || '';
+  let h = 0;
+  for (const ch of String(seed)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return lines[h % lines.length];
 }
 
 export const isMine = (c, s) =>
@@ -97,7 +114,7 @@ export function commentStatus(c, state, now = Date.now()) {
   if (isMine(c, state)) return { status: 'mine' };
   if (state.handled[c.id]) return { status: 'handled' };
   if (state.dryRun && state.dryHandled[c.id]) return { status: 'dry' };
-  const rule = matchRule(c.text, c.mediaId, state.rules);
+  const rule = matchRule(c.text, c.mediaId, state.rules, now);
   if (!rule) return { status: 'nomatch' };
   if (!(now - Date.parse(c.timestamp) < WEEK)) return { status: 'old', rule };
   if ((c.replies?.data || []).some((r) => isMine(r, state))) return { status: 'replied', rule };
@@ -150,10 +167,13 @@ export async function processComments(state, comments, api, now = Date.now()) {
       post: c.permalink || c.mediaId,
       ok: true,
       dry: state.dryRun,
+      ...(rule.gate ? { gate: 'asked' } : {}),
     };
     if (!state.dryRun) {
       try {
-        await api.dm(c.id, rule.dm);
+        // Follow gate: first DM asks them to follow + tap Done; the link goes out from processInbox once they do.
+        const res = await api.dm(c.id, rule.gate ? gateMessage(state) : dmMessage(rule, state));
+        if (rule.gate && res?.recipient_id) state.gates[res.recipient_id] = { rid: rule.id, user: entry.user, at: now, n: 1 };
         sent++;
       } catch (e) {
         if (isRateLimit(e)) {
@@ -169,7 +189,7 @@ export async function processComments(state, comments, api, now = Date.now()) {
           // Real failure (privacy settings, blocked, etc.): tell them publicly so they can fix it and comment again.
           if (state.failReplyText) {
             try {
-              await api.reply(c.id, state.failReplyText);
+              await api.reply(c.id, pickLine(state.failReplyText, c.id));
               entry.error += ' · Told them in a public reply.';
             } catch (e2) {
               entry.error += ` · Public reply also failed: ${e2.message}`;
@@ -180,7 +200,7 @@ export async function processComments(state, comments, api, now = Date.now()) {
       }
       if (entry.ok && state.replyEnabled && state.replyText) {
         try {
-          await api.reply(c.id, state.replyText);
+          await api.reply(c.id, pickLine(state.replyText, c.id));
         } catch (e) {
           entry.error = `DM sent, public reply failed: ${e.message}`;
           if (isRateLimit(e)) retryFrom = i + 1; // DM went out, keep this one handled
@@ -203,24 +223,108 @@ export async function processComments(state, comments, api, now = Date.now()) {
   return { picked: picks.length, sent, rateLimited: retryFrom >= 0 };
 }
 
+// ---------- DM message bodies ----------
+export const GATE_DONE = 'Done ✅';
+const QR = [{ content_type: 'text', title: GATE_DONE, payload: 'GATE_DONE' }];
+export const gateMessage = (state) => ({ text: state.gateText || DEFAULT_GATE, quick_replies: QR });
+export const notYetMessage = () => ({ text: "I can't see your follow yet 🙈 Follow me first, then tap “Done ✅” again.", quick_replies: QR });
+export const DEFAULT_GATE = 'Almost there! 👋 Follow me, then tap “Done ✅” below (or reply DONE) and I’ll send it right over.';
+// Link goes through the Worker's /l/<rule id> redirect when click tracking is on (origin is learned from the dashboard).
+export const linkFor = (rule, state) => (rule.link && state.origin && state.trackClicks !== false ? `${state.origin}/l/${rule.id}` : rule.link);
+// With a link button: Instagram's button template; the I/O layer falls back to plain text if Instagram refuses it.
+export function dmMessage(rule, state = {}) {
+  const url = linkFor(rule, state);
+  return url && rule.buttonTitle
+    ? { attachment: { type: 'template', payload: { template_type: 'button', text: rule.dm, buttons: [{ type: 'web_url', url, title: rule.buttonTitle }] } } }
+    : { text: url ? `${rule.dm}\n${url}` : rule.dm };
+}
+// Plain-text version of any message, for the fallback.
+export const plainText = (m) => m.text || `${m.attachment.payload.text}\n${m.attachment.payload.buttons[0].url}`;
+
+// ---------- inbox: follow-gate replies, DM keywords, story replies ----------
+// convs: [{ pid, user, msgs: [{ id, text, at }] }] — only messages FROM the other person, newest first.
+// api = { save, follows(pid) -> bool, send(pid, message) }. Same rule as comments: mark handled, save, then send.
+export const INBOX_MAX = 5;
+export async function processInbox(state, convs, api, now = Date.now()) {
+  const inboxRules = state.rules.filter((r) => r.inbox).map((r) => ({ ...r, postId: '' }));
+  const work = [];
+  for (const cv of convs) {
+    if (work.length >= INBOX_MAX) break;
+    const m = cv.msgs.find((x) => x.at > (state.inboxSeen[cv.pid] || 0) && now - x.at < 864e5); // 24 h reply window
+    if (!m) continue;
+    const gate = state.gates[cv.pid];
+    const rule = gate ? state.rules.find((r) => r.id === gate.rid) : matchRule(m.text, undefined, inboxRules, now);
+    if (!rule) { state.inboxSeen[cv.pid] = m.at; continue; } // seen, nothing to do (no save needed on its own)
+    work.push({ cv, m, gate, rule });
+  }
+  if (!work.length) return { handled: 0 };
+  for (const w of work) state.inboxSeen[w.cv.pid] = w.m.at;
+  await api.save(state);
+
+  let handled = 0;
+  for (const { cv, gate, rule } of work) {
+    const entry = { t: now, user: cv.user, keyword: rule.keyword, post: 'DM', ok: true, dry: state.dryRun, via: gate ? 'follow gate' : 'DM keyword' };
+    try {
+      if (state.dryRun) { /* log only */ }
+      else if (rule.gate || gate) {
+        if (await api.follows(cv.pid)) {
+          await api.send(cv.pid, dmMessage(rule, state));
+          delete state.gates[cv.pid];
+          entry.gate = 'followed';
+        } else if (!gate || gate.n < 3) {
+          await api.send(cv.pid, gate ? notYetMessage() : gateMessage(state));
+          state.gates[cv.pid] = { rid: rule.id, user: cv.user, at: gate?.at || now, n: (gate?.n || 0) + 1 };
+          entry.gate = gate ? 'not following yet' : 'asked';
+        } else {
+          delete state.gates[cv.pid]; // asked 3 times: stop
+          entry.gate = 'gave up';
+        }
+      } else await api.send(cv.pid, dmMessage(rule, state));
+      handled++;
+    } catch (e) {
+      if (isRateLimit(e)) { state.lastError = { at: now, msg: 'Rate limited by Instagram. Will retry next run.' }; addLog(state, { ...entry, ok: false, error: e.message }); break; }
+      entry.ok = false; entry.error = e.message;
+    }
+    addLog(state, entry);
+  }
+  await api.save(state);
+  return { handled };
+}
+
+export function pruneInbox(state, now = Date.now()) {
+  for (const [k, g] of Object.entries(state.gates)) if (now - g.at >= 864e5) delete state.gates[k]; // window closed
+  for (const [k, at] of Object.entries(state.inboxSeen)) if (now - at >= WEEK) delete state.inboxSeen[k];
+}
+
 // Trust boundary: dashboard input.
+const lines = (s, max) => String(s ?? '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, max);
 export function validateConfig(body) {
   if (!body || !Array.isArray(body.rules)) return { error: 'rules must be a list' };
   if (body.rules.length > 50) return { error: 'max 50 rules' };
   const rules = [];
   for (const r of body.rules) {
-    const match = r.match === 'emoji' ? 'emoji' : 'keyword';
-    const keyword = match === 'emoji' ? 'any emoji' : String(r.keyword ?? '').trim();
+    const match = ['emoji', 'any'].includes(r.match) ? r.match : 'keyword';
+    const keyword = match === 'emoji' ? 'any emoji' : match === 'any' ? 'any comment' : String(r.keyword ?? '').trim();
     const dm = String(r.dm ?? '').trim();
     const postId = String(r.postId ?? '').trim();
+    const exclude = String(r.exclude ?? '').trim();
+    const link = String(r.link ?? '').trim();
+    const buttonTitle = String(r.buttonTitle ?? '').trim();
+    const until = r.until ? Number(r.until) : null;
     if (!keyword || keyword.length > 50) return { error: 'each keyword must be 1-50 characters' };
     if (!dm || dm.length > 1000) return { error: `DM text for "${keyword}" must be 1-1000 characters` };
     if (postId && !/^\d+$/.test(postId)) return { error: `post ID for "${keyword}" must be digits` };
-    rules.push({ id: String(r.id || crypto.randomUUID()), match, keyword, dm, postId, enabled: !!r.enabled });
+    if (exclude.length > 200) return { error: `exclude words for "${keyword}" max 200 characters` };
+    if (link && !/^https:\/\/[^\s]{3,500}$/.test(link)) return { error: `link for "${keyword}" must start with https:// and have no spaces` };
+    if (buttonTitle.length > 20) return { error: `button text for "${keyword}" max 20 characters` };
+    if (until !== null && !(until > 0)) return { error: `end date for "${keyword}" is invalid` };
+    rules.push({ id: String(r.id || crypto.randomUUID()), match, keyword, dm, postId, enabled: !!r.enabled,
+      exclude, link, buttonTitle: link ? buttonTitle : '', until, gate: !!r.gate, inbox: !!r.inbox });
   }
-  const replyText = String(body.replyText ?? '').trim();
-  if (replyText.length > 300) return { error: 'reply text max 300 characters' };
-  const failReplyText = String(body.failReplyText ?? '').trim();
-  if (failReplyText.length > 300) return { error: 'failed-DM reply text max 300 characters' };
-  return { rules, replyText, replyEnabled: !!body.replyEnabled && !!replyText, failReplyText, dryRun: !!body.dryRun };
+  const replyText = lines(body.replyText, 10).join('\n');
+  const failReplyText = lines(body.failReplyText, 10).join('\n');
+  if ([...replyText.split('\n'), ...failReplyText.split('\n')].some((l) => l.length > 300)) return { error: 'each reply line max 300 characters' };
+  const gateText = String(body.gateText ?? '').trim();
+  if (gateText.length > 640) return { error: 'follow-gate message max 640 characters' };
+  return { rules, replyText, replyEnabled: !!body.replyEnabled && !!replyText, failReplyText, gateText, trackClicks: body.trackClicks !== false, dryRun: !!body.dryRun };
 }
