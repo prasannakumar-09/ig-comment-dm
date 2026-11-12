@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Comment to DM</title>
+<style>
+  :root {
+    --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --ink:#0f1218; --ink-2:#454b56; --muted:#767d89; --line:#e4e7ec;
+    --accent:#4f46e5; --accent-hover:#4338ca; --accent-soft:#eef0ff; --on-accent:#fff;
+    --ok:#15803d; --ok-soft:#e7f6ec; --bad:#dc2626; --bad-soft:#fdecec; --warn:#b45309; --warn-soft:#fdf3e2;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); --radius:14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0c0e12; --surface:#14171c; --surface-2:#1b1f26; --ink:#eef0f4; --ink-2:#b9bfc9; --muted:#8b929e; --line:#262b34;
+      --accent:#8b84ff; --accent-hover:#a19bff; --accent-soft:#232147; --on-accent:#0c0e12;
+      --ok:#4ade80; --ok-soft:#10291a; --bad:#f87171; --bad-soft:#341616; --warn:#fbbf24; --warn-soft:#33260b;
+      --shadow:none;
+    }
+  }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14.5px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, textarea, select { font:inherit; color:inherit; }
+  a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+
+  /* layout */
+  header.top { position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .bar { max-width:1080px; margin:0 auto; padding:12px 16px; display:flex; align-items:center; gap:12px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:650; font-size:15.5px; margin-right:auto; }
+  .logo { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#f58529,#dd2a7b 50%,#8134af); }
+  main { max-width:1080px; margin:0 auto; padding:20px 16px 64px; display:grid; gap:16px; }
+  .grid-2 { display:grid; gap:16px; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); align-items:start; }
+  @media (max-width:860px) { .grid-2 { grid-template-columns:minmax(0,1fr); } }
+  .stack { display:grid; gap:16px; }
+
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .card-h { display:flex; align-items:center; gap:12px; padding:16px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .card-h h2 { font-size:15px; margin:0; font-weight:650; }
+  .card-h p { margin:2px 0 0; color:var(--muted); font-size:13px; }
+  .card-h .grow { flex:1 1 auto; min-width:0; }
+  .card-b { padding:16px 18px; }
+
+  /* pills, badges */
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:12.5px; font-weight:600; background:var(--surface-2); color:var(--ink-2); white-space:nowrap; }
+  .pill .dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .pill.accent { background:var(--accent-soft); color:var(--accent); }
+  /* tabs + comments view */
+  .tabs { padding-top:0; padding-bottom:0; gap:4px; }
+  .bar { min-width:0; } .brand { min-width:0; }
+  main > * { min-width:0; } /* grid items may shrink below their content, so wide rows scroll inside instead */
+  .cm-tools .seg button { flex:none; white-space:nowrap; }
+  #accountPill { min-width:0; max-width:40vw; overflow:hidden; text-overflow:ellipsis; display:inline-block; }
+  @media (max-width:420px) { .brand span:last-child { display:none; } }
+  .tabs button { border:0; background:none; padding:10px 12px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tabs button[aria-current="page"] { color:var(--ink); border-bottom-color:var(--accent); }
+  .chips { display:flex; gap:8px; overflow-x:auto; padding:14px 18px 4px; scrollbar-width:thin; }
+  .chip { flex:none; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-2); }
+  .chip[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+  .chip .n { color:var(--muted); font-weight:500; margin-left:4px; }
+  .cm-tools { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 18px 14px; border-bottom:1px solid var(--line); }
+  .cm-tools input { flex:1 1 200px; max-width:320px; }
+  .cm-tools .seg { overflow-x:auto; max-width:100%; }
+  .clist { list-style:none; margin:0; padding:0; }
+  .clist li { display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:12px; padding:12px 18px; border-top:1px solid var(--line); align-items:start; }
+  .clist li:first-child { border-top:0; }
+  .clist .ctext { margin-top:2px; overflow-wrap:anywhere; white-space:pre-wrap; }
+  .clist .side { display:grid; gap:6px; justify-items:end; }
+  @media (max-width:560px) { .clist li { grid-template-columns:32px minmax(0,1fr); } .clist .side { grid-column:2; justify-items:start; grid-auto-flow:column; justify-content:start; } }
+  .pill.ok { background:var(--ok-soft); color:var(--ok); } .pill.bad { background:var(--bad-soft); color:var(--bad); } .pill.warn { background:var(--warn-soft); color:var(--warn); }
+  .kw { display:inline-block; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12.5px; font-weight:600; padding:2px 8px; border-radius:6px; background:var(--accent-soft); color:var(--accent); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; }
+
+  /* buttons */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; padding:0 14px; border-radius:10px; border:1px solid var(--line); background:var(--surface); cursor:pointer; font-weight:600; font-size:13.5px; white-space:nowrap; }
+  .btn:hover:not(:disabled) { background:var(--surface-2); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .btn.primary:hover:not(:disabled) { background:var(--accent-hover); }
+  .btn.danger { background:var(--bad); border-color:var(--bad); color:#fff; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .icon-btn { width:36px; height:36px; display:inline-grid; place-items:center; border-radius:9px; border:1px solid transparent; background:transparent; cursor:pointer; color:var(--ink-2); }
+  .icon-btn:hover { background:var(--surface-2); border-color:var(--line); }
+  .icon-btn.del:hover { color:var(--bad); }
+  svg { width:16px; height:16px; flex:none; }
+
+  /* switch */
+  .switch { position:relative; width:40px; height:24px; border-radius:999px; border:0; background:var(--line); cursor:pointer; flex:none; transition:background .15s; padding:0; }
+  .switch::after { content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s; }
+  .switch[aria-checked="true"] { background:var(--ok); }
+  .switch[aria-checked="true"]::after { transform:translateX(16px); }
+  .switch:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* banner */
+  .banner { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:var(--radius); background:var(--warn-soft); color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 25%, transparent); flex-wrap:wrap; }
+  .banner b { color:var(--ink); } .banner span { color:var(--ink-2); flex:1 1 260px; }
+
+  /* stats */
+  .stats { display:grid; gap:12px; grid-template-columns:repeat(4, minmax(0,1fr)); }
+  @media (max-width:760px) { .stats { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  .stat { padding:14px 16px; }
+  .stat .label { color:var(--muted); font-size:12.5px; font-weight:600; }
+  .stat .value { font-size:24px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+  .stat .sub { color:var(--muted); font-size:12.5px; }
+  .stat .value.bad-text { color:var(--bad); }
+
+  /* latest run bar */
+  .runbar-top { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .runbar-top .big { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .runbar-top .when { color:var(--muted); font-size:12.5px; margin-left:auto; }
+  .track { display:flex; height:12px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+  .track > span { height:100%; transition:width .4s ease; }
+  .seg-sent { background:var(--ok); } .seg-skip { background:var(--muted); opacity:.5; } .seg-fail { background:var(--bad); } .seg-dry { background:var(--warn); }
+  .seg-live { background:repeating-linear-gradient(45deg, var(--accent) 0 8px, color-mix(in srgb, var(--accent) 70%, transparent) 8px 16px); background-size:22px 22px; animation:slide 1s linear infinite; }
+  @keyframes slide { to { background-position:22px 0; } }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12.5px; color:var(--ink-2); }
+  .legend i { display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; vertical-align:0; }
+
+  /* rules */
+  .rules { list-style:none; margin:0; padding:0; }
+  .rule { display:grid; grid-template-columns:minmax(90px,140px) minmax(0,1fr) auto; gap:14px; align-items:center; padding:14px 18px; border-top:1px solid var(--line); }
+  .rule:first-child { border-top:0; }
+  .rule.off .kw, .rule.off .dm { opacity:.55; }
+  .rule .dm { color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow-wrap:anywhere; }
+  .rule .meta { color:var(--muted); font-size:12.5px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rule .actions { display:flex; align-items:center; gap:4px; }
+  .rule .actions .switch { margin-right:6px; }
+  @media (max-width:560px) {
+    .rule { grid-template-columns:minmax(0,1fr) auto; }
+    .rule .body { grid-column:1 / -1; grid-row:2; }
+  }
+  .empty { padding:28px 18px; text-align:center; color:var(--muted); }
+  .empty b { display:block; color:var(--ink); margin-bottom:4px; }
+
+  /* forms */
+  .field { display:grid; gap:6px; margin-bottom:14px; }
+  .field label, .field .lbl { font-weight:600; font-size:13px; }
+  .field .hint { color:var(--muted); font-size:12.5px; }
+  .field .err { color:var(--bad); font-size:12.5px; }
+  input[type=text], textarea, select { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+  input[type=text]:focus, textarea:focus, select:focus { outline:2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset:0; border-color:var(--accent); }
+  textarea { min-height:110px; resize:vertical; }
+  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .row.between { justify-content:space-between; }
+  .counter { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; }
+
+  /* activity */
+  .seg { display:inline-flex; background:var(--surface-2); border-radius:10px; padding:3px; gap:2px; }
+  .seg button { border:0; background:transparent; padding:5px 10px; border-radius:8px; font-size:12.5px; font-weight:600; color:var(--ink-2); cursor:pointer; }
+  .seg button[aria-pressed="true"] { background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+  .log { list-style:none; margin:0; padding:0; max-height:560px; overflow:auto; }
+  .log li { display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:12px; padding:12px 18px; border-top:1px solid var(--line); align-items:start; }
+  .log li:first-child { border-top:0; }
+  .avatar { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:13px; background:var(--accent-soft); color:var(--accent); text-transform:uppercase; }
+  .log .who { font-weight:600; overflow-wrap:anywhere; }
+  .log .meta { color:var(--muted); font-size:12.5px; }
+  .log .errtxt { color:var(--bad); font-size:12.5px; margin-top:2px; overflow-wrap:anywhere; }
+
+  dl.kv { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:10px 14px; margin:0; }
+  dl.kv dt { color:var(--muted); } dl.kv dd { margin:0; overflow-wrap:anywhere; }
+  .run-out { margin-top:12px; font-size:13px; color:var(--ink-2); min-height:1.5em; }
+
+  /* dialogs */
+  dialog { border:1px solid var(--line); border-radius:16px; padding:0; width:min(560px, calc(100vw - 32px)); background:var(--surface); color:var(--ink); box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  dialog::backdrop { background:rgba(10,12,16,.45); }
+  .dlg-h { padding:18px 20px 4px; } .dlg-h h3 { margin:0; font-size:16px; } .dlg-h p { margin:6px 0 0; color:var(--ink-2); }
+  .dlg-b { padding:16px 20px 4px; }
+  .dlg-f { padding:12px 20px 18px; display:flex; justify-content:flex-end; gap:8px; }
+
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(20px); opacity:0; transition:all .2s; z-index:50; background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; font-weight:600; font-size:13.5px; max-width:calc(100vw - 32px); pointer-events:none; }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  #toast.bad { background:var(--bad); color:#fff; }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  .skeleton { color:var(--muted); padding:40px 0; text-align:center; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+      <span>Comment → DM</span>
+    </div>
+    <span id="accountPill" class="pill">…</span>
+    <span id="modePill" class="pill">…</span>
+  </div>
+  <nav class="tabs bar" aria-label="Sections">
+    <button type="button" data-view="overview">Overview</button>
+    <button type="button" data-view="comments">Comments</button>
+  </nav>
+</header>
+
+<main id="app"><div class="skeleton">Loading…</div></main>
+
+<dialog id="ruleDlg" aria-labelledby="ruleDlgTitle">
+  <form method="dialog" id="ruleForm" novalidate>
+    <div class="dlg-h"><h3 id="ruleDlgTitle">New rule</h3><p>When a comment matches, the commenter gets this DM.</p></div>
+    <div class="dlg-b">
+      <div class="field">
+        <label for="fMatch">Trigger</label>
+        <select id="fMatch">
+          <option value="keyword">A keyword or a specific emoji</option>
+          <option value="emoji">Any emoji</option>
+        </select>
+        <span class="hint" id="matchHint"></span>
+      </div>
+      <div class="field" id="kwField">
+        <label for="fKeyword">Keyword</label>
+        <input type="text" id="fKeyword" maxlength="50" autocomplete="off" placeholder="e.g. LINK" required>
+        <span class="hint">Whole word, any letter case. "link" matches "Link please" but not "linkedin". An emoji like 🔥 works too.</span>
+        <span class="err" id="eKeyword" hidden></span>
+      </div>
+      <div class="field">
+        <div class="row between"><label for="fDm">DM text</label><span class="counter" id="dmCount">0 / 1000</span></div>
+        <textarea id="fDm" maxlength="1000" placeholder="Here's the link you asked for: https://…" required></textarea>
+        <span class="err" id="eDm" hidden></span>
+      </div>
+      <div class="field">
+        <label for="fPost">Applies to</label>
+        <select id="fPost"></select>
+      </div>
+      <div class="row between" style="margin-bottom:10px">
+        <span class="lbl" id="fOnLbl" style="font-weight:600">Rule is on</span>
+        <button type="button" class="switch" id="fOn" role="switch" aria-checked="true" aria-labelledby="fOnLbl"></button>
+      </div>
+    </div>
+    <div class="dlg-f">
+      <button type="button" class="btn" id="ruleCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="ruleSave">Save rule</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="confirmDlg" aria-labelledby="confirmTitle">
+  <div class="dlg-h"><h3 id="confirmTitle"></h3><p id="confirmText"></p></div>
+  <div class="dlg-f">
+    <button type="button" class="btn" id="confirmNo">Cancel</button>
+    <button type="button" class="btn" id="confirmYes">OK</button>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const I = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+};
+const $ = (s) => document.querySelector(s);
+function h(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'icon') n.innerHTML = I[v]; // static icons only, never user data
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  n.append(...kids.flat().filter((k) => k != null && k !== false));
+  return n;
+}
+const iconBtn = (icon, label, onclick, cls = '') => h('button', { type: 'button', class: 'icon-btn ' + cls, 'aria-label': label, title: label, icon, onclick });
+
+let S = null, posts = [], postsError = '', busy = false, filter = 'all', runMsg = '';
+
+/* ---------- helpers ---------- */
+function toast(msg, bad) {
+  const t = $('#toast'); t.textContent = msg; t.className = bad ? 'show bad' : 'show';
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.className = bad ? 'bad' : ''), 3200);
+}
+async function api(path, opts = {}) {
+  const res = await fetch(location.origin + path, { ...opts, headers: { 'Content-Type': 'application/json' } });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText || 'Request failed');
+  return data;
+}
+function rel(ms) {
+  if (!ms) return '—';
+  const s = Math.round((Date.now() - ms) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+  return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+const full = (ms) => (ms ? new Date(ms).toLocaleString() : '');
+function postLabel(id) {
+  if (!id) return 'All posts';
+  const p = posts.find((x) => x.id === id);
+  if (!p) return 'Post …' + id.slice(-6);
+  const cap = (p.caption || '').replace(/\s+/g, ' ').trim();
+  return (cap ? (cap.length > 40 ? cap.slice(0, 40) + '…' : cap) : '(no caption)') + ' · ' + new Date(p.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+const nextCron = () => { const now = Date.now(), step = 300e3; return Math.ceil((now + 1) / step) * step; };
+function runBlockedReason() {
+  if (!S) return 'Loading';
+  if (new Date().getUTCMinutes() % 5 === 0) return 'Scheduled check is running now';
+  if (S.lastRunAt && Date.now() - S.lastRunAt < 120e3) return 'A run just happened. Wait 2 minutes';
+  return '';
+}
+
+/* ---------- saving: every action saves immediately ---------- */
+const FAIL_DEFAULT = "We couldn't DM you 🙈 Please allow message requests or follow us, then comment again.";
+const typing = () => ['replyText', 'failReplyText', 'cmSearch'].includes(document.activeElement?.id); // don't re-render under the cursor
+
+/* ---------- comments tab ---------- */
+let view = location.hash === '#comments' ? 'comments' : 'overview';
+let CM = null, cmLoading = false, cmError = '', cmPost = 'all', cmFilter = 'all', cmQuery = '';
+const CS = { // status -> [label, pill style]
+  queued: ['Will DM next run', 'accent'], dry: ['Dry-run match', 'warn'], sent: ['DM sent', 'ok'], failed: ['DM failed', 'bad'],
+  skipped: ['Skipped · already had a DM', ''], replied: ['Skipped · you replied', ''], handled: ['Handled', ''],
+  nomatch: ['No keyword', ''], mine: ['Your comment', ''], old: ['Older than 7 days', ''],
+};
+const CF = [['all', 'All'], ['queued', 'Will DM'], ['sent', 'Sent'], ['failed', 'Failed'], ['skip', 'Skipped'], ['nomatch', 'No keyword'], ['other', 'Yours / old']];
+const inFilter = (c, f) => f === 'all' || c.status === f || (f === 'queued' && c.status === 'dry')
+  || (f === 'skip' && ['skipped', 'replied', 'handled'].includes(c.status)) || (f === 'other' && ['mine', 'old'].includes(c.status));
+async function loadComments() {
+  if (cmLoading) return;
+  cmLoading = true; cmError = ''; render();
+  try { CM = await api('/api/comments'); } catch (e) { cmError = e.message; }
+  cmLoading = false; render();
+}
+function setView(v) {
+  view = v; history.replaceState(null, '', v === 'comments' ? '#comments' : '#');
+  if (v === 'comments' && !CM) loadComments(); else render();
+}
+document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+
+function renderComments() {
+  const postLabelOf = (p) => (p.caption || '').replace(/\s+/g, ' ').trim().slice(0, 32) || new Date(p.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  const head = h('div', { class: 'card-h' },
+    h('div', { class: 'grow' }, h('h2', {}, 'Comments'),
+      h('p', {}, CM ? `${CM.comments.length} comments from ${CM.posts.length} posts · loaded ${rel(CM.loadedAt)}` : 'Recent comments from Instagram and what the tool did with each one.')),
+    h('button', { type: 'button', class: 'btn', disabled: cmLoading, 'data-fid': 'cmReload', onclick: loadComments }, cmLoading ? 'Loading…' : 'Reload'));
+  if (!CM) return h('section', { class: 'card' }, head,
+    h('div', { class: 'empty' }, cmError ? h('span', { class: 'errtxt' }, 'Could not load: ' + cmError) : 'Loading comments from Instagram…'));
+
+  const inPost = CM.comments.filter((c) => cmPost === 'all' || c.mediaId === cmPost);
+  const q = cmQuery.trim().toLowerCase();
+  const shown = inPost.filter((c) => inFilter(c, cmFilter) && (!q || c.user.toLowerCase().includes(q) || (c.text || '').toLowerCase().includes(q))).sort((a, b) => b.t - a.t);
+  const postById = Object.fromEntries(CM.posts.map((p) => [p.id, p]));
+  const count = (pid) => CM.comments.filter((c) => c.mediaId === pid).length;
+
+  const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Post' },
+    h('button', { type: 'button', class: 'chip', 'aria-pressed': String(cmPost === 'all'), 'data-fid': 'cp-all', onclick: () => { cmPost = 'all'; render(); } }, 'All posts', h('span', { class: 'n' }, CM.comments.length)),
+    CM.posts.map((p) => h('button', { type: 'button', class: 'chip', title: p.caption || '', 'aria-pressed': String(cmPost === p.id), 'data-fid': 'cp-' + p.id, onclick: () => { cmPost = p.id; render(); } },
+      postLabelOf(p), h('span', { class: 'n' }, count(p.id)))));
+
+  const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter by result' },
+    CF.map(([k, label]) => h('button', { type: 'button', 'aria-pressed': String(cmFilter === k), 'data-fid': 'cf-' + k, onclick: () => { cmFilter = k; render(); } },
+      `${label} ${inPost.filter((c) => inFilter(c, k)).length}`)));
+  const search = h('input', { type: 'text', id: 'cmSearch', placeholder: 'Search name or text', value: cmQuery, 'aria-label': 'Search comments',
+    oninput: (e) => { cmQuery = e.target.value; const pos = e.target.selectionStart; render(); const el = $('#cmSearch'); el.focus(); el.setSelectionRange(pos, pos); } });
+  const open = cmPost !== 'all' && postById[cmPost]?.permalink;
+
+  const list = shown.length
+    ? h('ul', { class: 'clist' }, shown.map((c) => {
+        const [label, cls] = CS[c.status] || [c.status, ''];
+        return h('li', {},
+          h('div', { class: 'avatar', 'aria-hidden': 'true' }, c.user.charAt(0) || '?'),
+          h('div', {},
+            h('div', { class: 'who' }, '@' + c.user, h('span', { class: 'meta', style: 'font-weight:400' }, ' · ' + rel(c.t) + (cmPost === 'all' ? ' · ' + postLabelOf(postById[c.mediaId] || {}) : ''))),
+            h('div', { class: 'ctext' }, c.text || ''),
+            c.error ? h('div', { class: 'errtxt', style: c.status === 'skipped' ? 'color:var(--muted)' : null }, c.error) : null),
+          h('div', { class: 'side' }, h('span', { class: 'pill ' + cls }, label), c.rule ? h('span', { class: 'kw' }, c.rule === 'any emoji' ? '😀 any emoji' : c.rule) : null));
+      }))
+    : h('div', { class: 'empty' }, h('b', {}, 'No comments here'), q || cmFilter !== 'all' ? 'Try another filter or search.' : 'No recent comments on this post.');
+
+  return h('section', { class: 'card' }, head, chips,
+    h('div', { class: 'cm-tools' }, search, seg, open ? h('a', { href: open, target: '_blank', rel: 'noopener' }, 'Open post ↗') : null),
+    list,
+    h('div', { class: 'card-b', style: 'border-top:1px solid var(--line)' }, h('p', { class: 'counter', style: 'margin:0' },
+      'Shows what Instagram gives apps (newest pages first). Comments Instagram hides as spam never appear here and cannot get a DM. "Will DM next run" goes out within 5 minutes.')));
+}
+const body = (over) => ({ rules: S.rules, replyText: S.replyText, replyEnabled: S.replyEnabled, failReplyText: S.failReplyText, dryRun: S.dryRun, ...over });
+async function save(over, okMsg) {
+  if (busy) return false;
+  busy = true; document.body.setAttribute('aria-busy', 'true'); render();
+  try {
+    S = await api('/api/config', { method: 'PUT', body: JSON.stringify(body(over)) });
+    toast(okMsg);
+    return true;
+  } catch (e) {
+    toast('Not saved: ' + e.message, true);
+    await load().catch(() => {});
+    return false;
+  } finally {
+    busy = false; document.body.removeAttribute('aria-busy'); render();
+  }
+}
+
+function confirmBox(title, text, okLabel, danger) {
+  const d = $('#confirmDlg');
+  $('#confirmTitle').textContent = title; $('#confirmText').textContent = text;
+  const yes = $('#confirmYes'); yes.textContent = okLabel; yes.className = 'btn ' + (danger ? 'danger' : 'primary');
+  d.showModal(); yes.focus();
+  return new Promise((resolve) => {
+    const done = (v) => { d.close(); yes.onclick = $('#confirmNo').onclick = d.oncancel = null; resolve(v); };
+    yes.onclick = () => done(true); $('#confirmNo').onclick = () => done(false); d.oncancel = () => done(false);
+  });
+}
+
+/* ---------- rule dialog ---------- */
+let editingId = null;
+function openRule(rule) {
+  editingId = rule ? rule.id : null;
+  $('#ruleDlgTitle').textContent = rule ? 'Edit rule' : 'New rule';
+  $('#fMatch').value = rule && rule.match === 'emoji' ? 'emoji' : 'keyword';
+  syncMatch();
+  $('#fKeyword').value = rule && rule.match !== 'emoji' ? rule.keyword : '';
+  $('#fDm').value = rule ? rule.dm : '';
+  $('#fOn').setAttribute('aria-checked', String(rule ? rule.enabled : true));
+  const sel = $('#fPost'); sel.replaceChildren(h('option', { value: '' }, 'All posts'));
+  for (const p of posts) sel.append(h('option', { value: p.id }, postLabel(p.id)));
+  if (rule && rule.postId && !posts.some((p) => p.id === rule.postId)) sel.append(h('option', { value: rule.postId }, postLabel(rule.postId)));
+  sel.value = rule ? rule.postId || '' : '';
+  if (postsError && !posts.length) sel.title = 'Could not load your posts: ' + postsError;
+  for (const e of ['#eKeyword', '#eDm']) $(e).hidden = true;
+  $('#dmCount').textContent = $('#fDm').value.length + ' / 1000';
+  $('#ruleDlg').showModal(); $('#fKeyword').focus();
+}
+function syncMatch() {
+  const emoji = $('#fMatch').value === 'emoji';
+  $('#kwField').hidden = emoji;
+  $('#matchHint').textContent = emoji ? 'Any comment with at least one emoji, like "😍" or "nice 🔥". Keyword rules are checked first.' : '';
+}
+$('#fMatch').addEventListener('change', syncMatch);
+$('#fDm').addEventListener('input',() => ($('#dmCount').textContent = $('#fDm').value.length + ' / 1000'));
+$('#fOn').addEventListener('click', (e) => e.currentTarget.setAttribute('aria-checked', String(e.currentTarget.getAttribute('aria-checked') !== 'true')));
+$('#ruleCancel').addEventListener('click', () => $('#ruleDlg').close());
+$('#ruleForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const match = $('#fMatch').value;
+  const keyword = match === 'emoji' ? 'any emoji' : $('#fKeyword').value.trim(), dm = $('#fDm').value.trim(), postId = $('#fPost').value;
+  const enabled = $('#fOn').getAttribute('aria-checked') === 'true';
+  const showErr = (id, msg) => { $(id).textContent = msg; $(id).hidden = !msg; };
+  const dup = S.rules.find((r) => r.id !== editingId && (r.match || 'keyword') === match && r.keyword.toLowerCase() === keyword.toLowerCase() && (r.postId || '') === postId);
+  showErr('#eKeyword', !keyword ? 'Enter a keyword.' : dup && match === 'keyword' ? 'You already have a rule with this keyword for the same posts.' : '');
+  showErr('#eDm', !dm ? 'Enter the DM text.' : '');
+  if (dup && match === 'emoji') toast('You already have an "any emoji" rule for the same posts.', true);
+  if (!keyword || !dm || dup) return;
+  const rule = { id: editingId || undefined, match, keyword, dm, postId, enabled };
+  const rules = editingId ? S.rules.map((r) => (r.id === editingId ? rule : r)) : [...S.rules, rule];
+  $('#ruleSave').disabled = true;
+  const ok = await save({ rules }, editingId ? 'Rule updated' : 'Rule added');
+  $('#ruleSave').disabled = false;
+  if (ok) $('#ruleDlg').close();
+});
+
+/* ---------- actions ---------- */
+async function toggleRule(r) {
+  await save({ rules: S.rules.map((x) => (x.id === r.id ? { ...x, enabled: !x.enabled } : x)) }, r.enabled ? `"${r.keyword}" turned off` : `"${r.keyword}" turned on`);
+}
+async function deleteRule(r) {
+  if (!(await confirmBox('Delete this rule?', `The rule for "${r.keyword}" will be removed. This can't be undone.`, 'Delete rule', true))) return;
+  await save({ rules: S.rules.filter((x) => x.id !== r.id) }, 'Rule deleted');
+}
+async function setDryRun(on) {
+  if (!on && !(await confirmBox('Go live?', 'Real DMs and public replies will be sent to matching comments from the last 7 days.', 'Go live', false))) return;
+  await save({ dryRun: on }, on ? 'Dry run on. Nothing will be sent' : 'Live. DMs will be sent');
+}
+async function runNow() {
+  const why = runBlockedReason(); if (why) { runMsg = why + '.'; render(); return; }
+  runMsg = 'Checking comments…'; busy = true; render();
+  try {
+    const r = await api('/api/run', { method: 'POST', body: '{}' });
+    runMsg = r.skipped || (r.error ? 'Error: ' + r.error
+      : `Checked ${r.posts} posts and ${r.comments} comments. ${r.picked} matched` + (S.dryRun ? ' (dry run, nothing sent).' : `, ${r.sent} DM${r.sent === 1 ? '' : 's'} sent.`) + (r.rateLimited ? ' Rate limited, rest retried next run.' : ''));
+  } catch (e) { runMsg = 'Error: ' + e.message; }
+  busy = false;
+  await load().catch(() => {});
+}
+
+/* ---------- render ---------- */
+function render() {
+  if (!S) return;
+  const now = Date.now(), day = now - 864e5;
+  const recent = S.log.filter((e) => e.t > day);
+  const sent24 = recent.filter((e) => e.ok && !e.dry).length;
+  const err24 = recent.filter((e) => !e.ok && !e.skipped).length;
+  const active = S.rules.filter((r) => r.enabled).length;
+
+  $('#accountPill').textContent = S.username ? '@' + S.username : 'Account not loaded';
+  $('#accountPill').className = 'pill' + (S.username ? '' : ' bad');
+  const mp = $('#modePill'); mp.className = 'pill ' + (S.dryRun ? 'warn' : 'ok');
+  mp.replaceChildren(h('span', { class: 'dot' }), S.dryRun ? 'Dry run' : 'Live');
+
+  const app = $('#app');
+  const focusId = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.fid : null;
+  document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-current', b.dataset.view === view ? 'page' : 'false'));
+  if (view === 'comments') {
+    app.replaceChildren(renderComments());
+    if (focusId) { const el = app.querySelector(`[data-fid="${CSS.escape(focusId)}"]`); if (el) el.focus(); }
+    return;
+  }
+
+  const banner = S.dryRun && h('div', { class: 'banner', role: 'note' },
+    h('b', {}, 'Dry run is on.'), h('span', {}, 'Matching comments are logged but no DMs or replies are sent.'),
+    h('button', { type: 'button', class: 'btn primary', 'data-fid': 'golive', disabled: busy, onclick: () => setDryRun(false) }, 'Go live'));
+
+  const stat = (label, value, sub, cls) => h('div', { class: 'card stat' }, h('div', { class: 'label' }, label), h('div', { class: 'value ' + (cls || '') }, value), h('div', { class: 'sub' }, sub));
+  const secs = Math.max(0, Math.round((nextCron() - now) / 1000));
+  const stats = h('div', { class: 'stats' },
+    stat('DMs sent', String(sent24), 'last 24 hours'),
+    stat('Errors', String(err24), 'last 24 hours', err24 ? 'bad-text' : ''),
+    stat('Active rules', `${active}`, `of ${S.rules.length} total`),
+    h('div', { class: 'card stat' }, h('div', { class: 'label' }, 'Next check'), h('div', { class: 'value', id: 'countdown' }, `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`), h('div', { class: 'sub' }, 'runs every 5 minutes')));
+
+  // latest run bar
+  const lr = S.lastRun;
+  let runCard;
+  if (!lr) {
+    runCard = h('section', { class: 'card card-b', 'aria-labelledby': 'runH' },
+      h('div', { class: 'runbar-top' }, h('h2', { id: 'runH', style: 'margin:0;font-size:15px' }, 'Latest run'), h('span', { class: 'when' }, 'No DMs triggered yet')),
+      h('div', { class: 'track' }));
+  } else {
+    const total = Math.max(lr.total, 1), pct = (n) => (n / total) * 100 + '%';
+    const live = !lr.done && now - lr.at < 120e3; // a run that never finished (crash) is not shown as live forever
+    const handledN = lr.sent + lr.failed + lr.skipped;
+    const headline = lr.dry ? `${lr.total} matched` : live ? `Sending… ${handledN} of ${lr.total}` : `${lr.sent} of ${lr.total} sent`;
+    const segs = lr.dry
+      ? [h('span', { class: 'seg-dry', style: 'width:100%' })]
+      : [h('span', { class: 'seg-sent', style: 'width:' + pct(lr.sent) }), h('span', { class: 'seg-skip', style: 'width:' + pct(lr.skipped) }), h('span', { class: 'seg-fail', style: 'width:' + pct(lr.failed) }),
+         live ? h('span', { class: 'seg-live', style: 'width:' + pct(lr.total - handledN) }) : null];
+    runCard = h('section', { class: 'card card-b', 'aria-labelledby': 'runH' },
+      h('div', { class: 'runbar-top' },
+        h('h2', { id: 'runH', style: 'margin:0;font-size:15px' }, 'Latest run'),
+        h('span', { class: 'big' }, headline),
+        lr.dry ? h('span', { class: 'pill warn' }, 'Dry run · nothing sent') : null,
+        h('span', { class: 'when', title: full(lr.at) }, new Date(lr.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' · ' + rel(lr.at))),
+      h('div', { class: 'track', role: 'progressbar', 'aria-label': 'DMs sent in the latest run', 'aria-valuemin': '0', 'aria-valuemax': String(lr.total), 'aria-valuenow': String(lr.dry ? lr.total : lr.sent) }, segs),
+      lr.dry ? h('div', { class: 'legend' }, 'These comments would get a DM if dry run were off.')
+        : h('div', { class: 'legend' },
+            h('span', {}, h('i', { class: 'seg-sent' }), `${lr.sent} sent`),
+            h('span', {}, h('i', { class: 'seg-skip' }), `${lr.skipped} skipped`),
+            h('span', {}, h('i', { class: 'seg-fail' }), `${lr.failed} failed`),
+            lr.retryLater ? h('span', {}, `${lr.retryLater} waiting (rate limit, next run)`) : null,
+            h('span', { style: 'margin-left:auto;color:var(--muted)' }, `max 15 per run`)));
+  }
+
+  // rules
+  const rulesList = S.rules.length
+    ? h('ul', { class: 'rules' }, S.rules.map((r) => h('li', { class: 'rule' + (r.enabled ? '' : ' off') },
+        h('div', {}, h('span', { class: 'kw', title: r.match === 'emoji' ? 'Any comment with an emoji' : r.keyword }, r.match === 'emoji' ? '😀 any emoji' : r.keyword)),
+        h('div', { class: 'body' }, h('div', { class: 'dm' }, r.dm), h('div', { class: 'meta' }, postLabel(r.postId))),
+        h('div', { class: 'actions' },
+          h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(r.enabled), 'aria-label': `Rule "${r.keyword}" on`, title: r.enabled ? 'On' : 'Off', disabled: busy, 'data-fid': 'sw-' + r.id, onclick: () => toggleRule(r) }),
+          iconBtn('edit', `Edit rule "${r.keyword}"`, () => openRule(r)),
+          iconBtn('trash', `Delete rule "${r.keyword}"`, () => deleteRule(r), 'del')))))
+    : h('div', { class: 'empty' }, h('b', {}, 'No rules yet'), 'Add a keyword and the DM it should send.');
+  const rulesCard = h('section', { class: 'card', 'aria-labelledby': 'rulesH' },
+    h('div', { class: 'card-h' },
+      h('div', { class: 'grow' }, h('h2', { id: 'rulesH' }, 'Keyword rules'), h('p', {}, 'First matching rule wins. Changes save instantly.')),
+      h('button', { type: 'button', class: 'btn primary', icon: 'plus', disabled: busy, onclick: () => openRule(null) }, 'New rule')),
+    rulesList);
+
+  // activity
+  const items = S.log.filter((e) => filter === 'all' || (filter === 'sent' && e.ok && !e.dry) || (filter === 'err' && !e.ok && !e.skipped) || (filter === 'dry' && e.dry));
+  const segBtn = (key, label) => h('button', { type: 'button', 'aria-pressed': String(filter === key), 'data-fid': 'seg-' + key, onclick: () => { filter = key; render(); } }, label);
+  const status = (e) => e.dry ? h('span', { class: 'pill warn' }, 'Dry run') : e.skipped ? h('span', { class: 'pill' }, 'Skipped') : e.ok ? h('span', { class: 'pill ok' }, 'Sent') : h('span', { class: 'pill bad' }, 'Failed');
+  const postLink = (e) => /^https:\/\/www\.instagram\.com\//.test(e.post || '') ? h('a', { href: e.post, target: '_blank', rel: 'noopener' }, 'View post') : null;
+  const activityCard = h('section', { class: 'card', 'aria-labelledby': 'actH' },
+    h('div', { class: 'card-h' },
+      h('div', { class: 'grow' }, h('h2', { id: 'actH' }, 'Activity'), h('p', {}, 'Last 100 DMs')),
+      h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter activity' }, segBtn('all', 'All'), segBtn('sent', 'Sent'), segBtn('err', 'Errors'), segBtn('dry', 'Dry run'))),
+    items.length
+      ? h('ul', { class: 'log' }, items.map((e) => h('li', {},
+          h('div', { class: 'avatar', 'aria-hidden': 'true' }, (e.user || '?').replace(/^@/, '').charAt(0) || '?'),
+          h('div', {},
+            h('div', { class: 'who' }, '@' + e.user, ' ', h('span', { class: 'kw' }, e.keyword)),
+            h('div', { class: 'meta', title: full(e.t) }, rel(e.t), postLink(e) ? ' · ' : '', postLink(e)),
+            e.error ? h('div', { class: 'errtxt', style: e.ok ? 'color:var(--warn)' : e.skipped ? 'color:var(--muted)' : null }, e.error) : null),
+          status(e))))
+      : h('div', { class: 'empty' }, h('b', {}, filter === 'all' ? 'Nothing yet' : 'Nothing here'), filter === 'all' ? 'Matched comments will show up here.' : 'Try another filter.'));
+
+  // reply settings
+  const replyInput = h('input', { type: 'text', id: 'replyText', maxlength: '300', value: S.replyText, placeholder: 'Sent you a DM 📩', disabled: busy || !S.replyEnabled });
+  const replyCard = h('section', { class: 'card', 'aria-labelledby': 'replyH' },
+    h('div', { class: 'card-h' },
+      h('div', { class: 'grow' }, h('h2', { id: 'replyH' }, 'Public reply'), h('p', {}, 'Posted under the comment after the DM is sent.')),
+      h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(S.replyEnabled), 'aria-label': 'Post a public reply', disabled: busy, 'data-fid': 'replySw',
+        onclick: () => S.replyEnabled ? save({ replyEnabled: false }, 'Public reply off') : save({ replyEnabled: true, replyText: S.replyText || 'Sent you a DM 📩' }, 'Public reply on') })),
+    h('div', { class: 'card-b' },
+      h('div', { class: 'field', style: 'margin-bottom:10px' }, h('label', { for: 'replyText' }, 'Reply text'), replyInput),
+      h('button', { type: 'button', class: 'btn', disabled: busy || !S.replyEnabled, onclick: () => {
+        const t = $('#replyText').value.trim(); if (!t) return toast('Reply text is empty. Turn the reply off instead.', true);
+        save({ replyText: t }, 'Reply text saved');
+      } }, 'Save reply text')),
+    h('div', { class: 'card-h', style: 'border-top:1px solid var(--line)' },
+      h('div', { class: 'grow' }, h('h2', { id: 'failH' }, 'If the DM fails'), h('p', {}, 'Posted under the comment when Instagram blocks the DM, e.g. their privacy settings.')),
+      h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(!!S.failReplyText), 'aria-labelledby': 'failH', disabled: busy, 'data-fid': 'failSw',
+        onclick: () => S.failReplyText ? save({ failReplyText: '' }, 'Failed-DM reply off') : save({ failReplyText: FAIL_DEFAULT }, 'Failed-DM reply on') })),
+    S.failReplyText ? h('div', { class: 'card-b' },
+      h('div', { class: 'field', style: 'margin-bottom:10px' }, h('label', { for: 'failReplyText' }, 'Reply text'),
+        h('input', { type: 'text', id: 'failReplyText', maxlength: '300', value: S.failReplyText, disabled: busy })),
+      h('button', { type: 'button', class: 'btn', disabled: busy, onclick: () => {
+        const t = $('#failReplyText').value.trim(); if (!t) return toast('Text is empty. Use the switch to turn it off instead.', true);
+        save({ failReplyText: t }, 'Failed-DM reply saved');
+      } }, 'Save failed-DM text')) : null);
+
+  // system
+  const blocked = runBlockedReason();
+  const sysCard = h('section', { class: 'card', 'aria-labelledby': 'sysH' },
+    h('div', { class: 'card-h' }, h('div', { class: 'grow' }, h('h2', { id: 'sysH' }, 'System'), h('p', {}, 'Instagram connection and manual run.'))),
+    h('div', { class: 'card-b' },
+      h('dl', { class: 'kv' },
+        h('dt', {}, 'Account'), h('dd', {}, S.username ? '@' + S.username : 'Not loaded yet. Press Run now'),
+        h('dt', {}, 'Token'), h('dd', {}, S.hasToken ? h('span', { class: 'pill ok' }, 'Connected · never expires') : h('span', { class: 'pill bad' }, 'Missing')),
+        h('dt', {}, 'Last DM activity'), h('dd', { title: full(S.lastRunAt) }, rel(S.lastRunAt)),
+        h('dt', {}, 'Mode'), h('dd', {}, h('div', { class: 'row' },
+          h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(S.dryRun), 'aria-label': 'Dry run', disabled: busy, 'data-fid': 'drySw', onclick: () => setDryRun(!S.dryRun) }),
+          S.dryRun ? 'Dry run (nothing sent)' : 'Live')),
+        S.lastError ? [h('dt', {}, 'Last error'), h('dd', { class: 'errtxt', title: full(S.lastError.at) }, `${rel(S.lastError.at)}: ${S.lastError.msg}`)] : null),
+      h('div', { class: 'row', style: 'margin-top:16px' },
+        h('button', { type: 'button', class: 'btn primary', icon: 'play', disabled: busy || !!blocked, title: blocked || 'Check comments now', 'data-fid': 'run', onclick: runNow }, 'Run now'),
+        blocked ? h('span', { class: 'counter' }, blocked) : null),
+      h('div', { class: 'run-out', role: 'status', 'aria-live': 'polite' }, runMsg)));
+
+  app.replaceChildren(banner || '', runCard, stats,h('div', { class: 'grid-2' }, h('div', { class: 'stack' }, rulesCard, activityCard), h('div', { class: 'stack' }, replyCard, sysCard)));
+  // keep keyboard focus on the same control after re-render
+  if (focusId) { const el = app.querySelector(`[data-fid="${CSS.escape(focusId)}"]`); if (el) el.focus(); }
+}
+
+let seenRun = null; // tells the viewer when a new run finished
+let pageVersion = null; // Worker version this page was loaded from
+async function load() {
+  const next = await api('/api/state');
+  if (next.version && pageVersion && next.version !== pageVersion && !$('#ruleDlg').open && !$('#confirmDlg').open) return location.reload(); // new deploy: get the new page
+  pageVersion = pageVersion || next.version;
+  const r = next.lastRun;
+  if (seenRun !== null && r && r.done && r.at > seenRun) {
+    toast(r.dry ? `${r.total} comment${r.total === 1 ? '' : 's'} matched (dry run)` : `${r.sent} DM${r.sent === 1 ? '' : 's'} sent just now` + (r.failed ? `, ${r.failed} failed` : ''));
+  }
+  if (r && r.done) seenRun = r.at; else if (seenRun === null) seenRun = 0;
+  S = next; render();
+}
+
+(async () => {
+  try { await load(); } catch (e) { $('#app').replaceChildren(h('div', { class: 'skeleton' }, 'Could not load: ' + e.message)); return; }
+  api('/api/posts').then((p) => { posts = Array.isArray(p) ? p : []; render(); }).catch((e) => { postsError = e.message; });
+  if (view === 'comments') loadComments();
+  // live countdown
+  let lastBlocked = runBlockedReason();
+  setInterval(() => {
+    const b = runBlockedReason();
+    if (b !== lastBlocked && !busy && !$('#ruleDlg').open && !$('#confirmDlg').open && !typing()) { lastBlocked = b; render(); }
+    const c = $('#countdown'); if (!c) return;
+    const s = Math.max(0, Math.round((nextCron() - Date.now()) / 1000));
+    c.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }, 1000);
+  // Live refresh while the tab is visible: every 5 s in the 100 s after each scheduled run (when results land),
+  // every 15 s otherwise. 1 KV read each, ~400/hour with the page open; free limit is 100k/day.
+  const canRefresh = () => !document.hidden && !busy && !$('#ruleDlg').open && !$('#confirmDlg').open && !typing();
+  let lastPoll = Date.now();
+  setInterval(() => {
+    const gap = Date.now() % 300e3 < 100e3 ? 5e3 : 15e3;
+    if (Date.now() - lastPoll >= gap - 100 && canRefresh()) { lastPoll = Date.now(); load().catch(() => {}); }
+  }, 1000);
+  document.addEventListener('visibilitychange', () => { if (canRefresh()) { lastPoll = Date.now(); load().catch(() => {}); } });
+})();
+</script>
+</body>
+</html>

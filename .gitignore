@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.dev.vars*
+.env*
+*.log
+# your own IDs live here; friends copy wrangler.example.toml
+wrangler.toml

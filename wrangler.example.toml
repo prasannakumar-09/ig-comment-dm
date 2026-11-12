@@ -1,0 +1,23 @@
+# Copy this file to wrangler.toml and fill in the two values below (README step 4).
+# wrangler.toml is git-ignored, so your own IDs never end up in the repo.
+name = "ig-comment-dm"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+# Create with: npx wrangler kv namespace create KV   (then paste the id it prints below)
+kv_namespaces = [
+  { binding = "KV", id = "PASTE_YOUR_KV_NAMESPACE_ID" }
+]
+
+# Your Instagram account ID: the number shown next to your account in the Meta app (Generate access tokens). Not a secret.
+[vars]
+IG_USER_ID = "PASTE_YOUR_INSTAGRAM_ACCOUNT_ID"
+
+[version_metadata]
+binding = "VERSION"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Secrets (never put them here): npx wrangler secret put IG_TOKEN / DASH_PASSWORD
