@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Free Instagram Auto-DM — Setup Guide</title>
+<meta name="description" content="Set up a free comment-to-DM tool for your Instagram in about 20 minutes. Let AI (Antigravity or Claude Code) do it for you.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#fbf8f3; --surface:#ffffff; --ink:#1d1a17; --ink-2:#4b4540; --muted:#857d75; --line:#ece4d9;
+    --accent:#e2621b; --accent-soft:#fdebdf; --ok:#1f8a4c; --ok-soft:#e5f5ec; --warn-soft:#fff4dc; --code:#f4eee6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#141210; --surface:#1c1916; --ink:#f3eee8; --ink-2:#c9c0b6; --muted:#958b80; --line:#2e2925;
+      --accent:#ff8a4c; --accent-soft:#3a2216; --ok:#4cc985; --ok-soft:#14301f; --warn-soft:#33280e; --code:#24201c;
+    }
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width:680px; margin:0 auto; padding:48px 20px 80px; }
+  a { color:var(--accent); text-underline-offset:3px; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:6px; }
+  h1 { font-family:"Instrument Serif", Georgia, serif; font-weight:400; font-size:clamp(40px, 9vw, 58px); line-height:1.02; letter-spacing:-.01em; margin:14px 0 16px; }
+  h1 em { color:var(--accent); }
+  h2 { font-family:"Instrument Serif", Georgia, serif; font-weight:400; font-size:34px; line-height:1.1; margin:56px 0 8px; }
+  h3 { font-size:18px; margin:0 0 4px; }
+  p { margin:0 0 14px; color:var(--ink-2); }
+  .eyebrow { font:500 13px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .lead { font-size:19px; color:var(--ink-2); }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0; padding:0; list-style:none; }
+  .chips li { background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:14px; font-weight:500; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:22px; margin:18px 0; }
+  .need { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
+  .need li { display:grid; grid-template-columns:28px 1fr; gap:10px; }
+  .need .ic { font-size:20px; line-height:1.4; }
+  .need small { display:block; color:var(--muted); font-size:14px; }
+  ol.steps { list-style:none; counter-reset:s; padding:0; margin:22px 0 0; }
+  ol.steps > li { counter-increment:s; position:relative; padding:0 0 30px 58px; }
+  ol.steps > li::before { content:counter(s); position:absolute; left:0; top:-2px; width:40px; height:40px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; display:grid; place-items:center; }
+  ol.steps > li:not(:last-child)::after { content:""; position:absolute; left:19px; top:44px; bottom:6px; width:2px; background:var(--line); }
+  .prompt { position:relative; background:var(--code); border:1px solid var(--line); border-radius:14px; padding:16px 16px 56px; margin:12px 0 0;
+    font:500 14.5px/1.55 "JetBrains Mono", ui-monospace, monospace; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--ink); }
+  .copy { position:absolute; right:10px; bottom:10px; border:0; border-radius:10px; background:var(--accent); color:#fff; font:600 15px Inter, sans-serif; padding:10px 18px; cursor:pointer; min-height:44px; }
+  .copy.done { background:var(--ok); }
+  .ask { list-style:none; padding:0; margin:10px 0 0; display:grid; gap:8px; }
+  .ask li { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:15.5px; }
+  .ask b { color:var(--ink); }
+  .note { border-radius:14px; padding:14px 16px; margin:14px 0 0; font-size:15.5px; }
+  .note.warn { background:var(--warn-soft); }
+  .note.ok { background:var(--ok-soft); }
+  .note p { margin:0; color:var(--ink); }
+  .btn { display:inline-flex; align-items:center; gap:8px; text-decoration:none; font-weight:600; border-radius:12px; padding:12px 18px; min-height:46px; }
+  .btn.solid { background:var(--ink); color:var(--bg); }
+  .btn.line { border:1px solid var(--line); background:var(--surface); color:var(--ink); }
+  .btns { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 0; }
+  details { border-top:1px solid var(--line); padding:14px 0; }
+  details:last-of-type { border-bottom:1px solid var(--line); }
+  summary { cursor:pointer; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:12px; }
+  summary::-webkit-details-marker { display:none; }
+  summary::after { content:"+"; color:var(--accent); font-size:22px; line-height:1; }
+  details[open] summary::after { content:"–"; }
+  details p { margin:10px 0 0; }
+  code { font:500 .9em "JetBrains Mono", ui-monospace, monospace; background:var(--code); padding:2px 6px; border-radius:6px; }
+  footer { margin-top:56px; color:var(--muted); font-size:14px; }
+  @media (prefers-reduced-motion: no-preference) { .copy { transition:background .2s; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Free · Open on GitHub · ~20 minutes</div>
+  <h1>Auto-DM anyone who comments on your reels, <em>for free.</em></h1>
+  <p class="lead">Someone comments a word like <b>“AUTO”</b> (or any emoji), and within a few minutes they get your link in their DMs, plus a reply under their comment. You don't need to code: an AI sets it up for you.</p>
+  <ul class="chips">
+    <li>₹0 / month</li><li>Official Instagram API</li><li>No password sharing</li><li>Never double-DMs</li>
+  </ul>
+
+  <h2>What you need</h2>
+  <div class="card">
+    <ul class="need">
+      <li><span class="ic">📱</span><span>An <b>Instagram professional account</b> (Creator or Business), set to public<small>Profile → ☰ → Settings and activity → Account type and tools → Switch to professional account</small></span></li>
+      <li><span class="ic">👤</span><span>A <b>Facebook account</b><small>Meta uses it to give your Instagram the “permission” to send DMs</small></span></li>
+      <li><span class="ic">💻</span><span>A <b>laptop or computer</b> (Windows or Mac)<small>Only for setup. After that it runs on its own, computer on or off</small></span></li>
+      <li><span class="ic">🤖</span><span><b>Google Antigravity</b> or <b>Claude Code</b> installed<small>The AI app that does the setup for you (step 1)</small></span></li>
+    </ul>
+  </div>
+
+  <h2>Set it up with AI</h2>
+  <p>You copy one message, the AI does the rest and asks you for anything it needs.</p>
+  <ol class="steps">
+    <li>
+      <h3>Install an AI app</h3>
+      <p>Pick one. Both work the same for this.</p>
+      <div class="btns">
+        <a class="btn solid" href="https://antigravity.google/download" target="_blank" rel="noopener">Get Antigravity ↗</a>
+        <a class="btn line" href="https://claude.com/product/claude-code" target="_blank" rel="noopener">or Claude Code ↗</a>
+      </div>
+      <p style="margin-top:12px">If the AI later says <b>Node.js</b> or <b>Git</b> is missing, install them from <a href="https://nodejs.org/en/download" target="_blank" rel="noopener">nodejs.org</a> and <a href="https://git-scm.com/downloads" target="_blank" rel="noopener">git-scm.com</a> (just click Next → Next), then tell the AI “done”.</p>
+    </li>
+    <li>
+      <h3>Open an empty folder and paste this</h3>
+      <p>Make a new folder (e.g. <code>insta-dm</code>), open it in the AI app, start a new chat and paste:</p>
+      <div class="prompt" id="prompt">Set up this tool for me: https://github.com/prasannakumar0718/ig-comment-dm
+Clone it, read AGENTS.md and follow it step by step. Ask me for anything you need.<button class="copy" type="button" id="copy">Copy</button></div>
+    </li>
+    <li>
+      <h3>Answer the AI's questions</h3>
+      <p>It installs everything itself and only stops for things only you can do:</p>
+      <ul class="ask">
+        <li>📲 <b>Change 3 Instagram settings</b> on your phone (it tells you exactly where)</li>
+        <li>🔑 <b>Make a free Meta app</b> and click <b>Generate token</b> (it walks you through each screen)</li>
+        <li>☁️ <b>Log in to Cloudflare</b>: a browser tab opens, you click <b>Allow</b> (free account)</li>
+        <li>🔢 <b>Tell it your Instagram account number</b> (it shows you where to find it)</li>
+      </ul>
+      <div class="note warn"><p>🔒 <b>Never paste your token in the chat.</b> When the AI says so, you paste it into the terminal window, where it stays hidden. You'll also make up a password for your dashboard there.</p></div>
+    </li>
+    <li>
+      <h3>Add your first keyword</h3>
+      <p>The AI gives you your <b>dashboard link</b>. Bookmark it, open it, log in with your password, then:</p>
+      <ul class="ask">
+        <li><b>New rule</b> → keyword <code>AUTO</code> (or pick <b>Any emoji</b>)</li>
+        <li>Write the DM text with your link → <b>Save rule</b></li>
+      </ul>
+    </li>
+    <li>
+      <h3>Test it, then go live</h3>
+      <p>From a <b>second Instagram account</b>, comment your keyword on one of your posts. Within 5 minutes the dashboard shows it as <i>Dry run</i> (nothing sent yet). Tap <b>Go live</b>, comment again, and your second account gets the DM. 🎉</p>
+      <div class="note ok"><p>That's it. It now checks your comments every 5 minutes, day and night, for free.</p></div>
+    </li>
+  </ol>
+
+  <h2>Good to know</h2>
+  <details><summary>How fast does the DM arrive?</summary><p>Within <b>5 minutes</b> of the comment. The tool checks every 5 minutes. That's the fastest the free setup allows.</p></details>
+  <details><summary>Does it work on old comments?</summary><p>Comments from the <b>last 7 days</b> get the DM (that's Instagram's limit). A new comment on an old reel works fine.</p></details>
+  <details><summary>Will someone get the DM twice?</summary><p>No. Every comment gets <b>one DM, ever</b>. If you test, use a <b>new comment</b> each time.</p></details>
+  <details><summary>Someone says they got nothing</summary><p>Ask them to check <b>Requests</b> in their DMs: messages from accounts they don't follow land there. Also turn off <b>Hidden words → Hide comments</b> in your Instagram settings. Instagram hides “spammy” comments (like many people writing the same word) from apps.</p></details>
+  <details><summary>Is it really free and safe?</summary><p>Yes. It runs on your <b>own</b> free Cloudflare account and uses Instagram's <b>official</b> API. You never share your Instagram password, and nobody else (not even whoever shared this guide) can see your account or your DMs.</p></details>
+  <details><summary>I'm stuck</summary><p>Tell the AI exactly what you see, for example paste the error message. It knows this tool's troubleshooting steps. Or follow the full manual guide on <a href="https://github.com/prasannakumar0718/ig-comment-dm#readme" target="_blank" rel="noopener">GitHub</a>.</p></details>
+
+  <div class="btns" style="margin-top:36px">
+    <a class="btn solid" href="https://github.com/prasannakumar0718/ig-comment-dm" target="_blank" rel="noopener">View on GitHub ↗</a>
+  </div>
+
+  <footer>Made by <a href="https://www.instagram.com/prasanna_kumar_m96/" target="_blank" rel="noopener">@prasanna_kumar_m96</a>. Not affiliated with Meta or Instagram.</footer>
+</main>
+<script>
+  // Copy the setup prompt (without the button's own label).
+  const btn = document.getElementById('copy');
+  btn.addEventListener('click', async () => {
+    const text = document.getElementById('prompt').firstChild.textContent.trim();
+    try { await navigator.clipboard.writeText(text); }
+    catch { const r = document.createRange(); r.selectNodeContents(document.getElementById('prompt').firstChild); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand('copy'); }
+    btn.textContent = 'Copied ✓'; btn.classList.add('done');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 2000);
+  });
+</script>
+</body>
+</html>

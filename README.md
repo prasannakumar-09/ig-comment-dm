@@ -7,6 +7,8 @@ When someone comments a keyword (or an emoji) on your post or reel, they automat
 - **Your own copy:** you use your own Meta app, token and dashboard. Nobody else (including whoever shared this with you) can see your account or DMs.
 - **Safe:** each comment gets at most one DM, ever. It starts in **dry run** mode, which shows who *would* get a DM without sending anything.
 
+📖 **Not technical? Use the step-by-step beginner guide:** <https://prasannakumar0718.github.io/ig-comment-dm/>
+
 ## ⚡ Easiest: let AI set it up for you
 
 Open **Google Antigravity** (or Claude Code / Cursor), start a new chat in an empty folder, and paste:
