@@ -79,19 +79,36 @@
   <ul class="chips">
     <li>₹0 / month</li><li>Official Instagram API</li><li>No password sharing</li><li>Never double-DMs</li>
   </ul>
+  <div class="btns" style="margin-top:20px"><a class="btn solid" href="#start">Get the setup prompt</a><a class="btn line" href="#need">See requirements</a></div>
 
-  <h2>What you need</h2>
+  <h2 id="need">What you need</h2>
+  <p>Check these before you start. The AI shows you this same list first and helps with anything missing.</p>
   <div class="card">
     <ul class="need">
-      <li><span class="ic">📱</span><span>An <b>Instagram professional account</b> (Creator or Business), set to public<small>Profile → ☰ → Settings and activity → Account type and tools → Switch to professional account</small></span></li>
-      <li><span class="ic">👤</span><span>A <b>Facebook account</b><small>Meta uses it to give your Instagram the “permission” to send DMs</small></span></li>
-      <li><span class="ic">💻</span><span>A <b>laptop or computer</b> (Windows or Mac)<small>Only for setup. After that it runs on its own, computer on or off</small></span></li>
-      <li><span class="ic">🤖</span><span><b>Google Antigravity</b> or <b>Claude Code</b> installed<small>The AI app that does the setup for you (step 1)</small></span></li>
+      <li><span class="ic">💻</span><span>A <b>laptop or computer</b> (Windows or Mac)<small>Only for setup. After that it runs online on its own, computer on or off</small></span></li>
+      <li><span class="ic">📱</span><span>An <b>Instagram professional account</b> (Creator or Business), set to <b>public</b><small>Profile → ☰ → Settings and activity → Account type and tools → Switch to professional account</small></span></li>
+      <li><span class="ic">📲</span><span><b>Instagram on your phone</b><small>To change 3 settings and accept a tester invite</small></span></li>
+      <li><span class="ic">👤</span><span>A <b>Facebook account</b> you can log in to<small>Meta uses it for the free developer app that gives the DM permission. It may ask you to verify your phone or email</small></span></li>
+      <li><span class="ic">☁️</span><span>A free <b>Cloudflare account</b><small>Just an email. You can make it during setup at <a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener">dash.cloudflare.com/sign-up</a></small></span></li>
+      <li><span class="ic">👥</span><span>A <b>second Instagram account</b><small>A friend's or a spare one, to send the test comment</small></span></li>
+      <li><span class="ic">🤖</span><span><b>Google Antigravity</b> or <b>Claude Code</b><small>The AI app that does the setup (step 1). It also checks for Node.js and Git and tells you if they are missing</small></span></li>
+      <li><span class="ic">⏱️</span><span>About <b>20–30 minutes</b></span></li>
     </ul>
   </div>
 
-  <h2>Set it up with AI</h2>
-  <p>You copy one message, the AI does the rest and asks you for anything it needs.</p>
+  <h2>Keep in mind</h2>
+  <div class="card">
+    <ul class="need">
+      <li><span class="ic">🔒</span><span>Your Instagram <b>token</b> is like a password<small>You paste it only into the terminal window, never into the AI chat, email or any file</small></span></li>
+      <li><span class="ic">🔑</span><span>You'll make up a <b>dashboard password</b><small>Also typed only in the terminal. You use it to open your dashboard</small></span></li>
+      <li><span class="ic">⏳</span><span>Instagram's limits<small>DMs go out within 5 minutes, only for comments from the last 7 days, one DM per comment, up to 15 DMs every 5 minutes</small></span></li>
+      <li><span class="ic">🙈</span><span>Turn off <b>Hidden words → Hide comments</b><small>Instagram hides "spammy" comments from apps, and those people would never get a DM</small></span></li>
+      <li><span class="ic">🛡️</span><span>It all runs on <b>your own</b> free accounts<small>Nobody else, not even whoever shared this guide, can see your account or your DMs</small></span></li>
+    </ul>
+  </div>
+
+  <h2 id="start">Set it up with AI</h2>
+  <p>You copy one message with the repo and guide links. The AI reads everything, shows you the requirements, then does the setup and asks you for anything it needs.</p>
   <ol class="steps">
     <li>
       <h3>Install an AI app</h3>
@@ -105,12 +122,14 @@
     <li>
       <h3>Open an empty folder and paste this</h3>
       <p>Make a new folder (e.g. <code>insta-dm</code>), open it in the AI app, start a new chat and paste:</p>
-      <div class="prompt" id="prompt">Set up this tool for me: https://github.com/prasannakumar-09/ig-comment-dm
-Clone it, read AGENTS.md and follow it step by step. Ask me for anything you need.<button class="copy" type="button" id="copy">Copy</button></div>
+      <div class="prompt" id="prompt">Set up this Instagram comment-to-DM tool for me.
+Repo: https://github.com/prasannakumar-09/ig-comment-dm
+Guide: https://prasannakumar-09.github.io/ig-comment-dm/
+Clone the repo and read AGENTS.md first. Start by showing me the requirements list and wait for my answer. Then follow AGENTS.md one step at a time and ask me for anything you need.<button class="copy" type="button" id="copy">Copy</button></div>
     </li>
     <li>
-      <h3>Answer the AI's questions</h3>
-      <p>It installs everything itself and only stops for things only you can do:</p>
+      <h3>Check the requirements, then answer the AI's questions</h3>
+      <p>The AI first shows the requirements list and asks what's missing. Then it installs everything itself and only stops for things only you can do:</p>
       <ul class="ask">
         <li>📲 <b>Change 3 Instagram settings</b> on your phone (it tells you exactly where)</li>
         <li>🔑 <b>Make a free Meta app</b> and click <b>Generate token</b> (it walks you through each screen)</li>

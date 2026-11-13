@@ -14,11 +14,13 @@ When someone comments a keyword (or an emoji) on your post or reel, they automat
 Open **Google Antigravity** (or Claude Code / Cursor), start a new chat in an empty folder, and paste:
 
 ```text
-Set up this tool for me: https://github.com/prasannakumar-09/ig-comment-dm
-Clone it, read AGENTS.md and follow it step by step. Ask me for anything you need.
+Set up this Instagram comment-to-DM tool for me.
+Repo: https://github.com/prasannakumar-09/ig-comment-dm
+Guide: https://prasannakumar-09.github.io/ig-comment-dm/
+Clone the repo and read AGENTS.md first. Start by showing me the requirements list and wait for my answer. Then follow AGENTS.md one step at a time and ask me for anything you need.
 ```
 
-The AI installs and deploys everything and walks you through the parts only you can do (Instagram settings, Meta app, Cloudflare login). It never needs your token in the chat. You paste that into the terminal yourself.
+It first shows you the requirements list, then installs and deploys everything and walks you through the parts only you can do (Instagram settings, Meta app, Cloudflare login). It never needs your token in the chat. You paste that into the terminal yourself.
 
 ## Or set it up by hand
 

@@ -14,6 +14,27 @@ The tool: when someone comments a keyword on the user's Instagram post, it DMs t
 
 ## Steps
 
+### Start here: show the requirements first (before running anything)
+Your first reply must be this checklist, in plain words, then ask: "Do you have all of these? Tell me which ones are missing." Wait for the answer. Help with anything missing before step 0.
+
+**You need:**
+1. **A laptop or computer** (Windows or Mac). Only for setup; afterwards the tool runs online on its own.
+2. **An Instagram professional account** (Creator or Business), set to **public**. A personal or private account can't use the API.
+3. **Instagram on your phone**, to change 3 settings and accept a tester invite.
+4. **A Facebook account** you can log in to. Meta uses it for the free developer app (it may ask to verify your phone or email).
+5. **A free Cloudflare account** (just an email). You can make it during setup.
+6. **A second Instagram account** (a friend's or a spare) to send the test comment.
+7. **About 20–30 minutes.**
+8. **Node.js and Git.** I'll check these and tell you if they're missing.
+
+**Keep in mind:**
+- Your Instagram **token** is like a password. You'll paste it only into the terminal, **never into this chat**.
+- You'll make up a **dashboard password** (also typed only in the terminal).
+- Instagram's limits: a DM goes out within **5 minutes** of the comment, only for comments from the **last 7 days**, one DM per comment, max 15 DMs per 5 minutes.
+- Instagram hides "spammy" comments from apps, so we'll turn off **Hidden words → Hide comments**.
+- Everything runs on **your own** free accounts. Nobody else (including whoever shared this tool) can see your account or your DMs.
+
+
 ### 0. Prerequisites (you)
 - Run `node -v` (needs 18 or newer), `npm -v`, `git --version`.
 - If Node or Git is missing: tell the user to install Node.js LTS from https://nodejs.org and Git from https://git-scm.com/downloads, reopen the editor, then continue.
