@@ -18,7 +18,7 @@ The tool: when someone comments a keyword on the user's Instagram post, it DMs t
 Your first reply must be this checklist, in plain words, then ask: "Do you have all of these? Tell me which ones are missing." Wait for the answer. Help with anything missing before step 0.
 
 **You need:**
-1. **A laptop or computer** (Windows or Mac). Only for setup; afterwards the tool runs online on its own.
+1. **A laptop or computer** (Windows or Mac). Only for setup; afterwards the tool runs online on its own. (No laptop? There's a phone-only guide: https://prasannakumar-09.github.io/ig-comment-dm-phone/)
 2. **An Instagram professional account** (Creator or Business), set to **public**. A personal or private account can't use the API.
 3. **Instagram on your phone**, to change 3 settings and accept a tester invite.
 4. **A Facebook account** you can log in to. Meta uses it for the free developer app (it may ask to verify your phone or email).

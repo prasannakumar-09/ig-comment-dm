@@ -9,6 +9,8 @@ When someone comments a keyword (or an emoji) on your post or reel, they automat
 
 📖 **Not technical? Use the step-by-step beginner guide:** <https://prasannakumar-09.github.io/ig-comment-dm/>
 
+📱 **No laptop? Set it up from your phone:** <https://prasannakumar-09.github.io/ig-comment-dm-phone/>
+
 ## ⚡ Easiest: let AI set it up for you
 
 Open **Google Antigravity** (or Claude Code / Cursor), start a new chat in an empty folder, and paste:
