@@ -20,7 +20,7 @@ The tool: when someone comments a keyword on the user's Instagram post, it DMs t
 
 ### 1. Get the code (you)
 - If the current folder is not already this repo:
-  `git clone https://github.com/prasannakumar0718/ig-comment-dm.git` then `cd ig-comment-dm`.
+  `git clone https://github.com/prasannakumar-09/ig-comment-dm.git` then `cd ig-comment-dm`.
 - `npm install` (an npm warning about `allow-scripts` / `approve-scripts` is harmless here; don't change any npm settings)
 - `npm test`: every test must pass. If not, stop and report.
 

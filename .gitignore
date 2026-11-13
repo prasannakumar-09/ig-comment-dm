@@ -7,3 +7,4 @@ node_modules/
 wrangler.toml
 # reel production files (video, voice models, renders)
 reel/
+reels/
