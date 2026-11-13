@@ -7,9 +7,9 @@ When someone comments a keyword (or an emoji) on your post or reel, they automat
 - **Your own copy:** you use your own Meta app, token and dashboard. Nobody else (including whoever shared this with you) can see your account or DMs.
 - **Safe:** each comment gets at most one DM, ever. It starts in **dry run** mode, which shows who *would* get a DM without sending anything.
 
-📖 **Not technical? Use the step-by-step beginner guide:** <https://comment-dm-guide.myadaboinaswathi.workers.dev/>
+📖 **Not technical? Use the step-by-step beginner guide:** <https://comment-dm-guide.vercel.app/>
 
-📱 **No laptop? Set it up from your phone:** <https://comment-dm-guide.myadaboinaswathi.workers.dev/phone/>
+📱 **No laptop? Set it up from your phone:** <https://comment-dm-guide.vercel.app/phone/>
 
 > 🔒 **Keep your Instagram token private. Don't share it with anyone** (not us, not in DMs, comments or any AI chat). It goes only into your own Cloudflare account. Nobody here will ever ask for it or for your Instagram password. Shared it by mistake? Generate a new one in Meta.
 
@@ -20,7 +20,7 @@ Open **Google Antigravity** (or Claude Code / Cursor), start a new chat in an em
 ```text
 Set up this Instagram comment-to-DM tool for me.
 Repo: https://github.com/prasannakumar-09/ig-comment-dm
-Guide: https://comment-dm-guide.myadaboinaswathi.workers.dev/
+Guide: https://comment-dm-guide.vercel.app/
 Clone the repo and read AGENTS.md first. Start by showing me the requirements list and wait for my answer. Then follow AGENTS.md one step at a time and ask me for anything you need.
 ```
 
