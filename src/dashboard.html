@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Comment to DM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --ink:#0f1218; --ink-2:#454b56; --muted:#767d89; --line:#e4e7ec;
-    --accent:#4f46e5; --accent-hover:#4338ca; --accent-soft:#eef0ff; --on-accent:#fff;
-    --ok:#15803d; --ok-soft:#e7f6ec; --bad:#dc2626; --bad-soft:#fdecec; --warn:#b45309; --warn-soft:#fdf3e2;
-    --shadow:0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06); --radius:14px;
+    --bg:#f3f4f6; --surface:#fff; --surface-2:#f5f6f8; --ink:#14161c; --ink-2:#4a5160; --muted:#7d8492; --line:#e3e6eb;
+    --accent:#c4245e; --accent-hover:#a81d50; --accent-soft:#fcecf2; --on-accent:#fff;
+    --ok:#0f7a4a; --ok-soft:#e5f4ec; --bad:#cf2f2f; --bad-soft:#fcebeb; --warn:#a45a06; --warn-soft:#fcf1e1;
+    --shadow:0 1px 2px rgba(20,22,28,.04); --radius:12px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg:#0c0e12; --surface:#14171c; --surface-2:#1b1f26; --ink:#eef0f4; --ink-2:#b9bfc9; --muted:#8b929e; --line:#262b34;
-      --accent:#8b84ff; --accent-hover:#a19bff; --accent-soft:#232147; --on-accent:#0c0e12;
+      --bg:#101216; --surface:#171a20; --surface-2:#1e2229; --ink:#eceef2; --ink-2:#b4bac5; --muted:#868d99; --line:#272c35;
+      --accent:#ff6b9d; --accent-hover:#ff8ab2; --accent-soft:#3a1828; --on-accent:#101216;
       --ok:#4ade80; --ok-soft:#10291a; --bad:#f87171; --bad-soft:#341616; --warn:#fbbf24; --warn-soft:#33260b;
       --shadow:none;
     }
@@ -23,24 +25,24 @@
   * { box-sizing:border-box; }
   [hidden] { display:none !important; }
   html { -webkit-text-size-adjust:100%; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:14.5px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14.5px/1.55 "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   button, input, textarea, select { font:inherit; color:inherit; }
   a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
   :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:6px; }
   .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 
   /* layout */
-  header.top { position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
-  .bar { max-width:1080px; margin:0 auto; padding:12px 16px; display:flex; align-items:center; gap:12px; }
+  header.top { position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .bar { max-width:1200px; margin:0 auto; padding:12px 16px; display:flex; align-items:center; gap:12px; }
   .brand { display:flex; align-items:center; gap:10px; font-weight:650; font-size:15.5px; margin-right:auto; }
-  .logo { width:30px; height:30px; border-radius:9px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#f58529,#dd2a7b 50%,#8134af); }
-  main { max-width:1080px; margin:0 auto; padding:20px 16px 64px; display:grid; gap:16px; }
+  .logo { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; color:#fff; background:var(--accent); }
+  main { max-width:1200px; margin:0 auto; padding:20px 16px 64px; display:grid; gap:16px; }
   .grid-2 { display:grid; gap:16px; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); align-items:start; }
   @media (max-width:860px) { .grid-2 { grid-template-columns:minmax(0,1fr); } }
   .stack { display:grid; gap:16px; }
 
   .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
-  .card-h { display:flex; align-items:center; gap:12px; padding:16px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .card-h { display:flex; align-items:center; gap:12px; padding:16px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
   .card-h h2 { font-size:15px; margin:0; font-weight:650; }
   .card-h p { margin:2px 0 0; color:var(--muted); font-size:13px; }
   .card-h .grow { flex:1 1 auto; min-width:0; }
@@ -63,11 +65,25 @@
   .chip { flex:none; border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-2); }
   .chip[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
   .chip .n { color:var(--muted); font-weight:500; margin-left:4px; }
+  .chip .d { display:none; }
+  .cm-layout { display:grid; grid-template-columns:minmax(0,1fr); }
+  @media (min-width:900px) {
+    .cm-layout { grid-template-columns:260px minmax(0,1fr); }
+    .cm-layout .chips { flex-direction:column; gap:2px; overflow:auto; max-height:640px; padding:10px; border-right:1px solid var(--line); align-self:stretch; }
+    .cm-layout .chip { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto; column-gap:8px; max-width:none; text-align:left; border:0; border-radius:8px; padding:8px 10px; white-space:normal; background:none; }
+    .cm-layout .chip:hover { background:var(--surface-2); }
+    .cm-layout .chip[aria-pressed="true"] { background:var(--accent-soft); }
+    .cm-layout .chip .t { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cm-layout .chip .n { grid-row:1 / 3; grid-column:2; align-self:center; margin:0; min-width:26px; text-align:center; padding:1px 7px; border-radius:999px; background:var(--surface-2); font-size:12px; font-variant-numeric:tabular-nums; }
+    .cm-layout .chip[aria-pressed="true"] .n { background:var(--surface); color:var(--accent); }
+    .cm-layout .chip .d { display:block; color:var(--muted); font-weight:500; font-size:12px; }
+  }
   .cm-tools { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 18px 14px; border-bottom:1px solid var(--line); }
   .cm-tools input { flex:1 1 200px; max-width:320px; }
   .cm-tools .seg { overflow-x:auto; max-width:100%; }
   .clist { list-style:none; margin:0; padding:0; }
-  .clist li { display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:12px; padding:12px 18px; border-top:1px solid var(--line); align-items:start; }
+  .clist { max-height:640px; overflow:auto; }
+  .clist li { display:grid; grid-template-columns:32px minmax(0,1fr) auto; gap:12px; padding:12px 20px; border-top:1px solid var(--line); align-items:start; }
   .clist li:first-child { border-top:0; }
   .clist .ctext { margin-top:2px; overflow-wrap:anywhere; white-space:pre-wrap; }
   .clist .side { display:grid; gap:6px; justify-items:end; }
@@ -378,9 +394,9 @@ function renderComments() {
   const count = (pid) => CM.comments.filter((c) => c.mediaId === pid).length;
 
   const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Post' },
-    h('button', { type: 'button', class: 'chip', 'aria-pressed': String(cmPost === 'all'), 'data-fid': 'cp-all', onclick: () => { cmPost = 'all'; render(); } }, 'All posts', h('span', { class: 'n' }, CM.comments.length)),
-    CM.posts.map((p) => h('button', { type: 'button', class: 'chip', title: p.caption || '', 'aria-pressed': String(cmPost === p.id), 'data-fid': 'cp-' + p.id, onclick: () => { cmPost = p.id; render(); } },
-      postLabelOf(p), h('span', { class: 'n' }, count(p.id)))));
+    h('button', { type: 'button', class: 'chip', 'aria-pressed': String(cmPost === 'all'), 'data-fid': 'cp-all', onclick: () => { cmPost = 'all'; render(); } }, h('span', { class: 't' }, 'All posts'), h('span', { class: 'n' }, CM.comments.length), h('span', { class: 'd' }, CM.posts.filter((p) => count(p.id)).length + ' with comments')),
+    CM.posts.filter((p) => count(p.id) || cmPost === p.id).map((p) => h('button', { type: 'button', class: 'chip', title: p.caption || '', 'aria-pressed': String(cmPost === p.id), 'data-fid': 'cp-' + p.id, onclick: () => { cmPost = p.id; render(); } },
+      h('span', { class: 't' }, postLabelOf(p)), h('span', { class: 'n' }, count(p.id)), h('span', { class: 'd' }, new Date(p.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })))));
 
   const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Filter by result' },
     CF.map(([k, label]) => h('button', { type: 'button', 'aria-pressed': String(cmFilter === k), 'data-fid': 'cf-' + k, onclick: () => { cmFilter = k; render(); } },
@@ -402,9 +418,10 @@ function renderComments() {
       }))
     : h('div', { class: 'empty' }, h('b', {}, 'No comments here'), q || cmFilter !== 'all' ? 'Try another filter or search.' : 'No recent comments on this post.');
 
-  return h('section', { class: 'card' }, head, chips,
-    h('div', { class: 'cm-tools' }, search, seg, open ? h('a', { href: open, target: '_blank', rel: 'noopener' }, 'Open post ↗') : null),
-    list,
+  return h('section', { class: 'card' }, head,
+    h('div', { class: 'cm-layout' }, chips, h('div', { style: 'min-width:0' },
+      h('div', { class: 'cm-tools' }, search, seg, open ? h('a', { href: open, target: '_blank', rel: 'noopener' }, 'Open post ↗') : null),
+      list)),
     h('div', { class: 'card-b', style: 'border-top:1px solid var(--line)' }, h('p', { class: 'counter', style: 'margin:0' },
       'Shows what Instagram gives apps (newest pages first). Comments Instagram hides as spam never appear here and cannot get a DM. "Will DM next run" goes out within 5 minutes.')));
 }
