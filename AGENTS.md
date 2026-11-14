@@ -86,7 +86,7 @@ Run these one at a time (or, if your terminal cannot accept the user's typing, a
 Each should print `Success! Uploaded secret …`.
 
 ### 8. Check it works (user, you guide)
-1. User opens the dashboard URL, logs in with **any username** + their password.
+1. User opens the dashboard URL, signs in on the page that opens with their dashboard password.
 2. In **System**, press **Run now** → their `@username` must appear at the top.
    - "Try again in a minute" → the automatic check is running; wait a minute and retry.
    - "Invalid OAuth access token" → the token is wrong; regenerate it (step 3) and redo step 7.1.

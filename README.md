@@ -143,7 +143,7 @@ npx wrangler secret put DASH_PASSWORD
 
 ## 6. First run and test (10 min)
 
-1. Open your dashboard URL. Log in with **any username** + your `DASH_PASSWORD`.
+1. Open your dashboard URL. On the sign-in page, enter your `DASH_PASSWORD` and press **Sign in**. You stay signed in on that device for 30 days (sign out with the door icon, top right).
 2. In **System**, press **Run now**. Your `@username` should appear at the top. (If it says "Try again in a minute", the automatic check is running; wait a minute.)
 3. **Keyword rules → New rule:**
    - Trigger: **A keyword or a specific emoji** (e.g. `LINK`) or **Any emoji**
@@ -186,7 +186,7 @@ Done. It now runs every 5 minutes by itself, even with your computer off.
 
 | Problem | Fix |
 |---|---|
-| Dashboard keeps asking for password | Wrong password, or `DASH_PASSWORD` not set. Run `npx wrangler secret put DASH_PASSWORD` again, then close and reopen the browser. |
+| Sign-in page says "Wrong password" | Run `npx wrangler secret put DASH_PASSWORD` again to set a new one, then sign in with it. Changing it signs every device out. |
 | "Invalid OAuth access token" / account not loaded | Token wrong or from the wrong page. Generate it again (step 2.8) and run `npx wrangler secret put IG_TOKEN`. |
 | Someone commented but isn't in the **Comments** tab | Instagram hid their comment as spam. Turn off Hidden words filters (step 1.3). Identical one-word comments from many people get filtered most. |
 | "Skipped · you replied" | You replied under their comment yourself, so the tool leaves it. Delete your reply if you want them to get the DM. |

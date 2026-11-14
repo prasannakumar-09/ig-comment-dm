@@ -1,4 +1,5 @@
 import html from './dashboard.html';
+import loginHtml from './login.html';
 import { API, MAX_DMS, MAX_MEDIA, collectComments, commentStatus, defaults, isRateLimit, plainText, processComments, processInbox, pruneInbox, validateConfig } from './core.js';
 
 const KEY = 'state'; // the only KV key
@@ -143,18 +144,28 @@ async function run(env, manual = false) {
   }
 }
 
+// Sign-in: the password page sets a signed cookie "<expiry ms>.<HMAC>". The key is DASH_PASSWORD,
+// so changing the password signs every device out. No session storage needed.
+const COOKIE = 'dm_session';
+const SESSION_S = 30 * 86400;
+const same = async (x, y) => {
+  const [a, b] = await Promise.all([sha256(x), sha256(y)]);
+  return crypto.subtle.timingSafeEqual(a, b);
+};
+async function sign(env, exp) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(env.DASH_PASSWORD), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(`dm-session:${exp}`)));
+  return `${exp}.${btoa(String.fromCharCode(...mac)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+}
 async function authed(req, env) {
   if (!env.DASH_PASSWORD) return false;
-  let pass = '';
-  try {
-    const h = req.headers.get('Authorization') || '';
-    if (h.startsWith('Basic ')) pass = atob(h.slice(6)).split(':').slice(1).join(':');
-  } catch {
-    return false;
-  }
-  const [a, b] = await Promise.all([sha256(pass), sha256(env.DASH_PASSWORD)]);
-  return crypto.subtle.timingSafeEqual(a, b);
+  const v = (req.headers.get('Cookie') || '').split(/;\s*/).find((c) => c.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
+  const exp = Number(v?.split('.')[0]);
+  if (!v || !(exp > Date.now())) return false;
+  return same(v, await sign(env, exp));
 }
+const setCookie = (value, maxAge) => `${COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -176,14 +187,30 @@ const publicView = (s, env) => ({
 
 export default {
   async fetch(req, env, ctx) {
-    if (!(await authed(req, env)))
-      return new Response('Password required', { status: 401, headers: { 'WWW-Authenticate': 'Basic realm="ig-dm"' } });
-
     const { pathname } = new URL(req.url);
     const m = req.method;
     // Mutating calls must be JSON: forces a CORS preflight, so other sites can't trigger them with your saved login.
     if (m !== 'GET' && !(req.headers.get('Content-Type') || '').startsWith('application/json'))
       return json({ error: 'JSON required' }, 415);
+
+    if (m === 'POST' && pathname === '/api/login') {
+      const { password } = (await req.json().catch(() => null)) || {};
+      if (!env.DASH_PASSWORD) return json({ error: 'No dashboard password is set yet. Run: npx wrangler secret put DASH_PASSWORD' }, 503);
+      if (typeof password !== 'string' || !(await same(password, env.DASH_PASSWORD))) {
+        await new Promise((r) => setTimeout(r, 800)); // slows down password guessing
+        return json({ error: 'Wrong password. Try again.' }, 401);
+      }
+      const value = await sign(env, Date.now() + SESSION_S * 1000);
+      return new Response('{"ok":true}', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Set-Cookie': setCookie(value, SESSION_S) } });
+    }
+    if (m === 'POST' && pathname === '/api/logout')
+      return new Response('{"ok":true}', { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Set-Cookie': setCookie('', 0) } });
+
+    if (!(await authed(req, env))) {
+      if (m === 'GET' && pathname === '/')
+        return new Response(loginHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY' } });
+      return json({ error: 'Signed out. Reload the page to sign in.' }, 401);
+    }
 
     if (m === 'GET' && pathname === '/')
       return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });

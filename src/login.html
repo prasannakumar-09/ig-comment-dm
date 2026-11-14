@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<script>
+  // same theme choice as the dashboard (same site, same saved key)
+  (() => { let t = null; try { t = localStorage.getItem('theme'); } catch {}
+    const d = document.documentElement; d.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); d.style.colorScheme = d.dataset.theme; })();
+</script>
+<title>Sign in · Comment to DM</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='3' y='3' width='58' height='58' rx='13' fill='%23F4441A' stroke='%23141414' stroke-width='5'/%3E%3Cpath fill='%23FBFAF6' stroke='%23141414' stroke-width='3.5' stroke-linejoin='round' fill-rule='evenodd' d='M19 13H35a12.5 12.5 0 0 1 0 25H29V51H19ZM29 22H34.5a3.5 3.5 0 0 1 0 7H29Z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#e9e9e2; --surface:#fbfaf6; --ink:#141414; --muted:#6b6b66; --line:#d9d8d0; --edge:#141414; --ctl:#5c5c57;
+    --accent:#f4441a; --accent-hover:#ff5a2e; --on-accent:#141414; --bad:#c62828; --bad-soft:#fde4e1;
+    --shadow:5px 5px 0 var(--edge); --display:"Anton", Impact, sans-serif; --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  :root[data-theme=dark] {
+    --bg:#151515; --surface:#1e1e1c; --ink:#f3f2ec; --muted:#a3a29b; --line:#363633; --edge:#f3f2ec; --ctl:var(--edge);
+    --bad:#ff8a80; --bad-soft:#3a1a17; --shadow:5px 5px 0 var(--accent);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px; background:var(--bg); color:var(--ink);
+    font:15px/1.55 "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .card { position:relative; margin-top:84px; width:100%; max-width:390px; background:var(--surface); border:2px solid var(--edge); border-radius:16px; box-shadow:var(--shadow); padding:26px 24px 22px; }
+  h1 { font:400 34px/1.05 var(--display); text-transform:uppercase; letter-spacing:.01em; margin:0 0 4px; }
+  .sub { margin:0 0 18px; color:var(--muted); font:500 12px var(--mono); text-transform:uppercase; letter-spacing:.06em; }
+  label { display:block; font-weight:650; margin-bottom:6px; }
+  .pw { display:flex; gap:8px; }
+  input { flex:1; min-width:0; font:inherit; color:inherit; background:var(--bg); border:2px solid var(--ctl); border-radius:10px; padding:11px 13px; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .show { font:500 12px var(--mono); text-transform:uppercase; background:none; color:var(--ink); border:2px solid var(--ctl); border-radius:10px; padding:0 12px; cursor:pointer; }
+  .go { width:100%; margin-top:16px; font:400 17px var(--display); text-transform:uppercase; letter-spacing:.03em; border:2px solid var(--ctl); border-radius:12px;
+    padding:12px; min-height:48px; background:var(--accent); color:var(--on-accent); box-shadow:2px 2px 0 var(--ctl); cursor:pointer; transition:transform .1s, box-shadow .1s; }
+  .go:hover:not(:disabled) { transform:translate(-1px,-1px); box-shadow:3px 3px 0 var(--ctl); background:var(--accent-hover); }
+  .go:active:not(:disabled) { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ctl); }
+  .go:disabled { opacity:.65; cursor:wait; }
+  .err { margin-top:14px; padding:10px 12px; border-radius:10px; background:var(--bad-soft); color:var(--bad); font-size:14px; }
+  .hint { margin:16px 0 0; font-size:13px; color:var(--muted); }
+
+  /* pixel pet: same robot as the dashboard */
+  .pet-row { position:absolute; right:22px; top:-86px; } /* robot perches on the card's top edge, feet on the border */
+  .pet { width:66px; position:relative; animation:pet-bob 1.4s steps(1) infinite; }
+  .pet svg { width:100%; height:auto; display:block; overflow:visible; }
+  .pet .pk { fill:var(--ctl); } .pet .pc { fill:var(--surface); } .pet .ps { fill:#141414; } .pet .pa { fill:var(--accent); } .pet .pm { fill:var(--muted); }
+  .pet .ant { animation:pet-ant 1s steps(1) infinite; }
+  .pet .face { font:500 3px var(--mono); fill:var(--accent); text-anchor:middle; }
+  .pet.blinky .blink { opacity:0; animation:pet-blink 3s steps(1) infinite; }
+  .pet.blinky .face:not(.blink) { animation:pet-face 3s steps(1) infinite; }
+  .pet:not(.blinky) .blink { display:none; }
+  .pet.no .face { fill:var(--bad); }
+  .pet.no { animation:pet-shake .32s steps(2) 2; }
+  .pet.yes { animation:pet-hop .45s steps(1) 3; }
+  .say { position:absolute; right:calc(100% + 6px); top:10px; white-space:nowrap; padding:5px 10px; font:500 12px var(--mono);
+    background:var(--surface); color:var(--ink); border:2px solid var(--edge); border-radius:10px; box-shadow:3px 3px 0 var(--accent); }
+  .say.no { box-shadow:3px 3px 0 var(--bad); }
+  @keyframes pet-bob { 50% { transform:translateY(3px); } }
+  @keyframes pet-hop { 50% { transform:translateY(-9px); } }
+  @keyframes pet-shake { 0% { transform:translateX(-4px); } 50% { transform:translateX(4px); } }
+  @keyframes pet-ant { 50% { fill:var(--surface); } }
+  @keyframes pet-face { 0%, 93% { opacity:1; } 94%, 100% { opacity:0; } }
+  @keyframes pet-blink { 0%, 93% { opacity:0; } 94%, 100% { opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { .pet, .pet * { animation:none !important; } .pet .blink { display:none; } }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="pet-row"><div class="pet blinky" id="pet" role="img"></div><span class="say" id="say" hidden></span></div>
+  <h1>Sign in</h1>
+  <p class="sub">Comment → DM dashboard</p>
+  <form id="f">
+    <label for="pw">Dashboard password</label>
+    <div class="pw">
+      <input id="pw" type="password" autocomplete="current-password" required autofocus>
+      <button type="button" class="show" id="show" aria-pressed="false">Show</button>
+    </div>
+    <button class="go" id="go" type="submit">Sign in</button>
+    <div class="err" id="err" role="alert" hidden></div>
+  </form>
+  <p class="hint">This is the password you set as <b>DASH_PASSWORD</b>, not your Instagram password. You stay signed in on this device for 30 days.</p>
+</main>
+<script>
+  // Robot: same pixel art as the dashboard. Face + arms change with what you do.
+  const BODY = ['......kaak......', '......kaak......', '.......kk.......', '.......kk.......', '..kkkkkkkkkkkk..', '..kcccccccccck..',
+    '..kcssssssssck..', '..kcssssssssck..', '..kcssssssssck..', '..kcssssssssck..', '..kcssssssssck..', '..kcccccccccck..', '..kcacccccmmck..',
+    '..kkkkkkkkkkkk..', '....kkkkkkkk....', '....kcccccck....', '....kcaaaack....', '....kcccccck....', '....kkkkkkkk....', '.....kk..kk.....',
+    '.....kk..kk.....', '....kkk..kkk....'];
+  const ARM = { dnL: [[3, 15], [3, 16], [2, 17]], dnR: [[12, 15], [12, 16], [13, 17]], upL: [[3, 15], [2, 14], [1, 13], [1, 12], [1, 11]],
+    upR: [[12, 15], [13, 14], [14, 13], [14, 12], [14, 11]], stopR: [[12, 15], [13, 15], [14, 15], [15, 14], [15, 15], [15, 16]],
+    covL: [[3, 15], [2, 14], [1, 13], [1, 12], [2, 11], [3, 10]], covR: [[12, 15], [13, 14], [14, 13], [14, 12], [13, 11], [12, 10]] };
+  // two hands over the face screen (fingers on top), drawn last so they sit in front
+  const HANDS = [4, 5, 6, 9, 10, 11].flatMap((x) => [7, 8, 9].map((y) => [x, y, 'a'])) // orange palms, dark gap between them
+    .concat([4, 6, 9, 11].map((x) => [x, 6, 'a'])); // fingertips
+  const MOOD = { // face, arms, blinks?, what a screen reader hears
+    wait: ['o_o', 'dnL dnR', true, 'waiting for your password'], typing: ['-_-', 'dnL dnR', false, 'watching you type'],
+    peek: ['0_0', 'upL upR', false, 'surprised, password is visible'], cover: ['', 'covL covR', false, 'covering its eyes so it cannot see your password'], check: ['o_O', 'dnL dnR', false, 'checking the password'],
+    no: ['T_T', 'dnL stopR', false, 'sad, wrong password'], yes: ['<3', 'upL upR', false, 'happy, password correct'] };
+  const petEl = document.getElementById('pet'), sayEl = document.getElementById('say');
+  function mood(m, text) {
+    const [face, arms, blinks, label] = MOOD[m];
+    const cells = BODY.flatMap((row, y) => [...row].map((c, x) => [x, y, c]).filter(([, , c]) => c !== '.'));
+    arms.split(' ').forEach((a) => ARM[a].forEach(([x, y], i, all) => cells.push([x, y, i === all.length - 1 ? 'a' : 'k'])));
+    if (m === 'cover') cells.push(...HANDS);
+    petEl.innerHTML = `<svg viewBox="0 0 16 22" shape-rendering="crispEdges">${cells.map(([x, y, c]) =>
+      `<rect class="p${c}${c === 'a' && y < 2 ? ' ant' : ''}" x="${x}" y="${y}" width="1.02" height="1.02"/>`).join('')}` +
+      `<text class="face" x="8" y="9.4">${face}</text><text class="face blink" x="8" y="9.4">-_-</text></svg>`; // static markup only
+    petEl.className = 'pet' + (blinks ? ' blinky' : '') + (m === 'no' || m === 'yes' ? ' ' + m : '');
+    petEl.setAttribute('aria-label', 'Robot: ' + label);
+    sayEl.hidden = !text; sayEl.textContent = text || ''; sayEl.className = 'say' + (m === 'no' ? ' no' : '');
+    void petEl.offsetWidth; // restart the hop/shake animation on repeat
+  }
+  mood('wait');
+
+  const pw = document.getElementById('pw'), go = document.getElementById('go'), err = document.getElementById('err'), show = document.getElementById('show');
+  let busy = false;
+  // visible password + something typed = hands over its eyes; visible but empty = surprised
+  const idle = () => { if (!busy) mood(pw.type === 'text' ? (pw.value ? 'cover' : 'peek') : pw.value ? 'typing' : 'wait'); };
+  pw.addEventListener('input', () => { err.hidden = true; idle(); });
+  pw.addEventListener('blur', () => { if (!busy && err.hidden) mood('wait'); });
+  show.onclick = () => { const on = pw.type === 'password'; pw.type = on ? 'text' : 'password'; show.textContent = on ? 'Hide' : 'Show'; show.setAttribute('aria-pressed', on); pw.focus(); idle(); };
+  document.getElementById('f').onsubmit = async (e) => {
+    e.preventDefault();
+    busy = true; go.disabled = true; go.textContent = 'Checking…'; err.hidden = true; mood('check');
+    try {
+      const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw.value }) });
+      if (res.ok) { mood('yes', 'Welcome back!'); go.textContent = 'Opening…'; return setTimeout(() => location.replace('/'), 900); }
+      err.textContent = (await res.json().catch(() => ({}))).error || 'Sign-in failed. Try again.';
+      mood('no', res.status === 401 ? 'Wrong password' : 'Hmm, try again');
+    } catch { err.textContent = 'No connection. Check your internet and try again.'; mood('no', 'No internet?'); }
+    busy = false; err.hidden = false; go.disabled = false; go.textContent = 'Sign in'; pw.select();
+  };
+</script>
+</body>
+</html>
