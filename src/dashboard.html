@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <title>Comment to DM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg:#fffbe8; --surface:#fffefa; --surface-2:#fff6d6; --ink:#231a0c; --ink-2:#5c4d33; --muted:#8e7f62; --line:#f0e4bd;
@@ -191,6 +191,69 @@
   #toast.bad { background:var(--bad); color:#fff; }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
   .skeleton { color:var(--muted); padding:40px 0; text-align:center; }
+
+  /* ---------- guide theme (matches comment-dm-guide-v2): paper, ink, orange, hard shadows ---------- */
+  :root {
+    --bg:#e9e9e2; --surface:#fbfaf6; --surface-2:#f0efe8; --ink:#141414; --ink-2:#3a3a37; --muted:#6b6b66; --line:#d9d8d0; --edge:#141414;
+    --accent:#f4441a; --accent-hover:#ff5a2e; --accent-soft:#fde2d8; --on-accent:#141414; --radius:16px; --shadow:5px 5px 0 var(--edge);
+    --display:"Anton", Impact, sans-serif; --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#151515; --surface:#1e1e1c; --surface-2:#2a2a27; --ink:#f3f2ec; --ink-2:#cfcec7; --muted:#a3a29b; --line:#363633; --edge:#f3f2ec;
+      --accent:#f4441a; --accent-hover:#ff5a2e; --accent-soft:#3b1d13; --on-accent:#141414; --shadow:5px 5px 0 var(--accent);
+    }
+  }
+  body { font-family:"Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background-image:radial-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px); background-size:22px 22px; }
+  header.top { background:color-mix(in srgb, var(--bg) 92%, transparent); border-bottom:3px solid var(--edge); }
+  .brand { font-family:var(--display); font-weight:400; font-size:21px; text-transform:uppercase; letter-spacing:.02em; }
+  .logo { color:var(--on-accent); border:2.5px solid var(--edge); border-radius:9px; box-shadow:2px 2px 0 var(--edge); }
+  .tabs button { font-family:var(--display); font-weight:400; font-size:16px; text-transform:uppercase; letter-spacing:.03em; border-bottom-width:4px; }
+  .card { border:3px solid var(--edge); }
+  .card-h { border-bottom:3px solid var(--edge); }
+  .card-h h2, .dlg-h h3 { font-family:var(--display); font-weight:400; font-size:21px; text-transform:uppercase; letter-spacing:.02em; }
+  .stat .label { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; }
+  .stat .value, .runbar-top .big { font-family:var(--display); font-weight:400; font-size:32px; letter-spacing:.01em; }
+  .pill { font-family:var(--mono); font-size:11.5px; text-transform:uppercase; border:2px solid var(--edge); }
+  .chip, .kw, .avatar { border:2px solid var(--edge); }
+  .kw, .counter { font-family:var(--mono); }
+  .btn { border:2.5px solid var(--edge); border-radius:12px; box-shadow:3px 3px 0 var(--edge); font-family:var(--display); font-weight:400;
+    font-size:15px; text-transform:uppercase; letter-spacing:.03em; transition:transform .1s, box-shadow .1s; }
+  .btn:hover:not(:disabled) { transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--edge); }
+  .btn:active:not(:disabled) { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--edge); }
+  .btn.primary, .btn.danger { border-color:var(--edge); }
+  .btn.primary { color:var(--on-accent); }
+  input[type=text], input[type=date], textarea, select { border:2.5px solid var(--edge); border-radius:10px; }
+  .switch { border:2px solid var(--edge); }
+  .switch::after { top:1px; left:1px; border:2px solid var(--edge); box-shadow:none; }
+  .track { height:16px; border:2px solid var(--edge); }
+  .seg { border:2px solid var(--edge); }
+  .banner { border:2.5px solid var(--edge); box-shadow:var(--shadow); }
+  dialog { border:3px solid var(--edge); border-radius:18px; box-shadow:8px 8px 0 var(--accent); }
+  #toast { border:2.5px solid var(--accent); font-family:var(--display); font-weight:400; text-transform:uppercase; letter-spacing:.03em; }
+  :focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+
+  /* pixel pet in the Latest run card */
+  .has-pet { display:flex; align-items:center; gap:20px; }
+  .run-main { flex:1; min-width:0; }
+  .pet { flex:none; width:84px; position:relative; animation:pet-bob 1.4s steps(1) infinite; }
+  .pet.react { animation:pet-hop .5s steps(1) 6; }
+  .pet-say { position:absolute; right:calc(100% + 8px); top:6px; z-index:2; max-width:46vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    padding:5px 10px; font:500 12px var(--mono); background:var(--surface); color:var(--ink); border:2px solid var(--edge); border-radius:10px; box-shadow:3px 3px 0 var(--accent); }
+  @keyframes pet-hop { 50% { transform:translateY(-8px); } }
+  .pet svg { width:100%; height:auto; display:block; overflow:visible; }
+  .pet .pk { fill:var(--edge); } .pet .pc { fill:var(--surface); } .pet .ps { fill:#141414; } .pet .pa { fill:var(--accent); } .pet .pm { fill:var(--muted); }
+  .pet .ant { animation:pet-ant 1s steps(1) infinite; }
+  .pet .face { font:500 3px var(--mono); fill:var(--accent); text-anchor:middle; }
+  .pet .blink { opacity:0; animation:pet-blink 3s steps(1) infinite; }
+  .pet .face:not(.blink) { animation:pet-face 3s steps(1) infinite; }
+  @keyframes pet-face { 0%, 93% { opacity:1; } 94%, 100% { opacity:0; } }
+  @keyframes pet-bob { 50% { transform:translateY(4px); } }
+  @keyframes pet-ant { 50% { fill:var(--surface); } }
+  @keyframes pet-blink { 0%, 93% { opacity:0; } 94%, 100% { opacity:1; } }
+  @media (max-width:560px) { .pet { width:56px; } .has-pet { gap:12px; } }
+  @media (prefers-reduced-motion: reduce) { .pet, .pet * { animation:none !important; } .pet .blink { opacity:0; } }
 </style>
 </head>
 <body>
@@ -304,6 +367,42 @@ function h(tag, attrs = {}, ...kids) {
   }
   n.append(...kids.flat().filter((k) => k != null && k !== false));
   return n;
+}
+/* ---------- pixel pet: a tiny robot whose face is a terminal screen ---------- */
+const PET_BODY = ['......kaak......', '......kaak......', '.......kk.......', '.......kk.......', '..kkkkkkkkkkkk..', '..kcccccccccck..',
+  '..kcssssssssck..', '..kcssssssssck..', '..kcssssssssck..', '..kcssssssssck..', '..kcssssssssck..', '..kcccccccccck..', '..kcacccccmmck..',
+  '..kkkkkkkkkkkk..', '....kkkkkkkk....', '....kcccccck....', '....kcaaaack....', '....kcccccck....', '....kkkkkkkk....', '.....kk..kk.....',
+  '.....kk..kk.....', '....kkk..kkk....'];
+const PET_ARM = { dnL: [[3, 15], [3, 16], [2, 17]], dnR: [[12, 15], [12, 16], [13, 17]], upL: [[3, 15], [2, 14], [1, 13], [1, 12], [1, 11]],
+  upR: [[12, 15], [13, 14], [14, 13], [14, 12], [14, 11]], stopR: [[12, 15], [13, 15], [14, 15], [15, 14], [15, 15], [15, 16]] };
+const PET_MOOD = { // face, arms, what a screen reader hears
+  happy: ['^_^', 'dnL dnR', 'happy, all good'], wave: ['^o^', 'dnL upR', 'waving, DMs just went out'], wow: ['O_O', 'upL upR', 'busy, sending DMs'],
+  think: ['o_O', 'dnL dnR', 'thinking, dry run is on'], warn: ['!_!', 'dnL stopR', 'worried, some DMs failed'], sad: ['T_T', 'dnL dnR', 'sad, Instagram not connected'],
+  love: ['<3', 'upL upR', 'excited, a DM just went out'] };
+let petSeen = null, petReact = null; // newest log time already reacted to; the current short reaction {mood, text, until}
+function petNotice(log) { // called on every load: react to messages that are new since the last load
+  const newest = log.reduce((m, e) => Math.max(m, e.t || 0), 0);
+  if (petSeen !== null && newest > petSeen) {
+    const e = log.filter((x) => x.t > petSeen && !x.skipped).sort((a, b) => b.t - a.t)[0];
+    if (e) {
+      petReact = { mood: e.dry ? 'think' : e.ok ? 'love' : 'warn', text: (e.dry ? 'match from @' : e.ok ? 'DM sent to @' : 'DM failed: @') + e.user, until: Date.now() + 8000 };
+      setTimeout(() => { if (!typing()) render(); }, 8100); // back to the normal face
+    }
+  }
+  petSeen = Math.max(petSeen || 0, newest);
+}
+function pet(mood) {
+  const react = petReact && Date.now() < petReact.until ? petReact : null;
+  if (react) mood = react.mood;
+  const [face, arms, say] = PET_MOOD[mood];
+  const cells = PET_BODY.flatMap((row, y) => [...row].map((c, x) => [x, y, c]).filter(([, , c]) => c !== '.'));
+  arms.split(' ').forEach((a) => PET_ARM[a].forEach(([x, y], i, all) => cells.push([x, y, i === all.length - 1 ? 'a' : 'k']))); // accent hand
+  const rects = cells.map(([x, y, c]) => `<rect class="p${c}${c === 'a' && y < 2 ? ' ant' : ''}" x="${x}" y="${y}" width="1.02" height="1.02"/>`).join('');
+  const el = h('div', { class: 'pet', role: 'img', 'aria-label': 'Robot: ' + say, title: say });
+  el.innerHTML = `<svg viewBox="0 0 16 22" shape-rendering="crispEdges">${rects}` + // static markup only, never user data
+    `<text class="face" x="8" y="9.4">${face}</text><text class="face blink" x="8" y="9.4">-_-</text></svg>`;
+  if (react) { el.classList.add('react'); el.prepend(h('span', { class: 'pet-say' }, react.text)); el.title = react.text; } // h() sets text, so usernames stay plain text
+  return el;
 }
 const iconBtn = (icon, label, onclick, cls = '') => h('button', { type: 'button', class: 'icon-btn ' + cls, 'aria-label': label, title: label, icon, onclick });
 
@@ -602,6 +701,11 @@ function render() {
             lr.retryLater ? h('span', {}, `${lr.retryLater} waiting (rate limit, next run)`) : null,
             h('span', { style: 'margin-left:auto;color:var(--muted)' }, `max 15 per run`)));
   }
+  // pixel pet beside the run card; its face shows how things are going
+  const running = lr && !lr.done && now - lr.at < 120e3;
+  const mood = !S.username ? 'sad' : running ? 'wow' : err24 ? 'warn' : S.dryRun ? 'think' : lr && lr.sent && now - lr.at < 600e3 ? 'wave' : 'happy';
+  runCard.classList.add('has-pet');
+  runCard.replaceChildren(h('div', { class: 'run-main' }, ...runCard.childNodes), pet(mood));
 
   // rules
   const rulesList = S.rules.length
@@ -707,6 +811,7 @@ async function load() {
     toast(r.dry ? `${r.total} comment${r.total === 1 ? '' : 's'} matched (dry run)` : `${r.sent} DM${r.sent === 1 ? '' : 's'} sent just now` + (r.failed ? `, ${r.failed} failed` : ''));
   }
   if (r && r.done) seenRun = r.at; else if (seenRun === null) seenRun = 0;
+  petNotice(next.log || []);
   S = next; render();
 }
 
